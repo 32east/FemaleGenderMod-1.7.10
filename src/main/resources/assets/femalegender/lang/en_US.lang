@@ -11,6 +11,7 @@ femalegender.label.yes=Yes
 femalegender.label.no=No
 femalegender.label.exit=Exit
 
+femalegender.player_list.title=Players
 femalegender.wardrobe.title=Wardrobe
 femalegender.appearance_settings.title=Appearance Settings
 femalegender.char_settings.title=Character Settings
@@ -32,10 +33,8 @@ femalegender.slider.max_bounce=Bounce: MAX
 femalegender.slider.min_bounce=Bounce: NONE
 femalegender.slider.floppy=Floppiness: %s%%
 
-femalegender.tooltip.breast_physics=Makes breasts bounce with your movement.
-femalegender.tooltip.armor_physics=Keeps physics active while wearing a chestplate.
-femalegender.tooltip.hide_in_armor=Hides breasts entirely while wearing a chestplate.
-femalegender.tooltip.hurt_sounds=Replaces your hurt sound with a female one.
+femalegender.tooltip.breast_physics=Makes breasts bounce\nwith your movement.
+femalegender.tooltip.armor_physics=Keeps physics active\nwhile wearing a chestplate.
+femalegender.tooltip.hide_in_armor=Hides breasts entirely\nwhile wearing a chestplate.
+femalegender.tooltip.hurt_sounds=Replaces your hurt sound\nwith a female one.
 femalegender.tooltip.bounce_warning=High bounce values may look unnatural.
-
-femalegender.player_list.title=Players

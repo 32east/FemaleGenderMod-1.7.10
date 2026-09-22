@@ -52,7 +52,9 @@ public abstract class BaseWildfireScreen extends GuiScreen {
             }
             WildfireButton wb = (WildfireButton) button;
             if (wb.visible && wb.isHovered() && wb.getTooltip() != null) {
-                drawHoveringText(java.util.Collections.singletonList(wb.getTooltip()), mouseX, mouseY, fontRendererObj);
+                // Long single-line tooltips get pushed off the left edge, so lang files break them up
+                drawHoveringText(java.util.Arrays.asList(wb.getTooltip().split("\\n")), mouseX, mouseY,
+                        fontRendererObj);
                 return;
             }
         }

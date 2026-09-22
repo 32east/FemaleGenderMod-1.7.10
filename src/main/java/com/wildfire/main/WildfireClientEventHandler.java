@@ -50,11 +50,10 @@ public class WildfireClientEventHandler {
             GenderLayer.updatePhysics(player);
         }
 
-        if (mc.currentScreen == null) {
-            while (ClientProxy.openGenderMenu.isPressed()) {
-                if (self != null) {
-                    mc.displayGuiScreen(new WildfirePlayerListScreen(null, self.getUniqueID()));
-                }
+        // Always drain the queue, so a press made while a screen was open does not fire later
+        while (ClientProxy.openGenderMenu.isPressed()) {
+            if (self != null && mc.currentScreen == null) {
+                mc.displayGuiScreen(new WildfirePlayerListScreen(null, self.getUniqueID()));
             }
         }
 

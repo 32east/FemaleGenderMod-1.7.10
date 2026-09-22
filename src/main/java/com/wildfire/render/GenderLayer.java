@@ -146,7 +146,8 @@ public class GenderLayer {
                     .lerp(partialTicks, rightBreastPhysics.getPreBounceRotation(), rightBreastPhysics.getBounceRotation());
         }
 
-        if (bSize < 0.02f) {
+        // Upstream's cutoff, expressed against the pre-scaled size it used there
+        if (Math.min(bSize * 1.5f, 0.7f) < 0.02f) {
             return;
         }
 

@@ -18,10 +18,18 @@ def packMods = file(System.getenv('FGM_PACK_MODS')
 tasks.register('installMod', Copy) {
     group = 'femalegender'
     description = 'Copy the built mod into the modpack mods folder'
-    dependsOn tasks.named('reobfJar')
-    from(tasks.named('jar').flatMap { it.archiveFile })
+    // reobfJar, not jar: `jar` is the dev artifact and still carries MCP names, which blow up
+    // at runtime with NoSuchMethodError.
+    from(tasks.named('reobfJar').flatMap { it.archiveFile })
     into packMods
     rename { 'femalegender.jar' }
+    doFirst {
+        source.files.each { f ->
+            if (f.name.endsWith('-dev.jar')) {
+                throw new GradleException("Refusing to install ${f.name}: that is the dev jar, not the reobfuscated one")
+            }
+        }
+    }
     doLast {
         logger.lifecycle("installed ${packMods}/femalegender.jar")
     }

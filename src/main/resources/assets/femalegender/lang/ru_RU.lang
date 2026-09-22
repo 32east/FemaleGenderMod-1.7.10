@@ -11,6 +11,7 @@ femalegender.label.yes=Да
 femalegender.label.no=Нет
 femalegender.label.exit=Выход
 
+femalegender.player_list.title=Игроки
 femalegender.wardrobe.title=Гардероб
 femalegender.appearance_settings.title=Настройки внешности
 femalegender.char_settings.title=Настройки персонажа
@@ -32,10 +33,8 @@ femalegender.slider.max_bounce=Колебание: МАКС
 femalegender.slider.min_bounce=Колебание: НЕТ
 femalegender.slider.floppy=Мягкость: %s%%
 
-femalegender.tooltip.breast_physics=Грудь колышется при движении.
-femalegender.tooltip.armor_physics=Физика продолжает работать в нагруднике.
-femalegender.tooltip.hide_in_armor=Полностью скрывать грудь в нагруднике.
-femalegender.tooltip.hurt_sounds=Заменяет звук получения урона на женский.
+femalegender.tooltip.breast_physics=Грудь колышется\nпри движении.
+femalegender.tooltip.armor_physics=Физика продолжает работать\nв нагруднике.
+femalegender.tooltip.hide_in_armor=Полностью скрывать грудь\nв нагруднике.
+femalegender.tooltip.hurt_sounds=Заменяет звук получения\nурона на женский.
 femalegender.tooltip.bounce_warning=Высокие значения выглядят неестественно.
-
-femalegender.player_list.title=Игроки
