@@ -79,6 +79,7 @@ public class AutoTest {
                     WildfireGender.LOGGER.info("[autotest] world ready");
                     reportSoundRegistration(mc);
                     reportTooltipSplitting();
+                    reportSoundsJsonProviders(mc);
                     mc.gameSettings.thirdPersonView = 2; // front-facing third person
                     mc.gameSettings.hideGUI = true;
                     configure(mc, Gender.MALE, 0.8F, false);
@@ -287,6 +288,31 @@ public class AutoTest {
             WildfireGender.LOGGER.info("[autotest] sounds registered: hurt1=" + one + " hurt2=" + two);
         } catch (Throwable t) {
             WildfireGender.LOGGER.error("[autotest] sound lookup failed", t);
+        }
+    }
+
+    /**
+     * Lists every resource pack that answers for our sounds.json.
+     *
+     * <p>Some modpacks log "Invalid sounds.json" once our domain exists: a second provider answers
+     * for the same path with something that is not JSON. Our own copy still registers, but this
+     * says who the other one is.</p>
+     */
+    private static void reportSoundsJsonProviders(Minecraft mc) {
+        try {
+            ResourceLocation loc = new ResourceLocation(WildfireGender.MODID, "sounds.json");
+            java.util.List<?> resources = mc.getResourceManager().getAllResources(loc);
+            WildfireGender.LOGGER.info("[autotest] " + resources.size() + " provider(s) answer for " + loc);
+            for (Object o : resources) {
+                net.minecraft.client.resources.IResource resource = (net.minecraft.client.resources.IResource) o;
+                byte[] head = new byte[40];
+                int read = resource.getInputStream().read(head);
+                // 1.7.10's IResource does not carry the pack name, so identify it by its content
+                String preview = read > 0 ? new String(head, 0, read, "UTF-8").trim() : "<empty>";
+                WildfireGender.LOGGER.info("[autotest] sounds.json starts with: " + preview);
+            }
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.warn("[autotest] could not list sounds.json providers", t);
         }
     }
 
