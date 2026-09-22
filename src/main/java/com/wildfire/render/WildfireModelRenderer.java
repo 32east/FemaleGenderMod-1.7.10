@@ -28,6 +28,19 @@ public class WildfireModelRenderer {
 
         protected ModelBox(int tW, int tH, int texU, int texV, float x, float y, float z, int dx, int dy, int dz,
                 float delta, boolean mirror, int quads, boolean extra) {
+            this(tW, tH, texU, texV, x, y, z, dx, dy, dz, delta, delta, delta, mirror, quads, extra);
+        }
+
+        /**
+         * As above, but inflating each axis separately.
+         *
+         * <p>The jacket and armor copies of a breast are the same box drawn again, so every face they
+         * share with the skin copy has to be pushed strictly outside it or the two z-fight. Inflating
+         * does that without touching the UVs -- the same trick vanilla armor uses over the body -- and
+         * keeping X at zero leaves the inner face on the body centre line, where the two breasts meet.</p>
+         */
+        protected ModelBox(int tW, int tH, int texU, int texV, float x, float y, float z, int dx, int dy, int dz,
+                float deltaX, float deltaY, float deltaZ, boolean mirror, int quads, boolean extra) {
             this.posX1 = x;
             this.posY1 = y;
             this.posZ1 = z;
@@ -38,12 +51,12 @@ public class WildfireModelRenderer {
             float f = x + (float) dx;
             float f1 = y + (float) dy;
             float f2 = z + (float) dz;
-            x = x - delta;
-            y = y - delta;
-            z = z - delta;
-            f = f + delta;
-            f1 = f1 + delta;
-            f2 = f2 + delta;
+            x = x - deltaX;
+            y = y - deltaY;
+            z = z - deltaZ;
+            f = f + deltaX;
+            f1 = f1 + deltaY;
+            f2 = f2 + deltaZ;
             if (mirror) {
                 float f3 = f;
                 f = x;
@@ -85,6 +98,11 @@ public class WildfireModelRenderer {
             super(tW, tH, texU, texV, x, y, z, dx, dy, dz, delta, mirror, 4, isLeft);
         }
 
+        public OverlayModelBox(boolean isLeft, int tW, int tH, int texU, int texV, float x, float y, float z,
+                int dx, int dy, int dz, float deltaX, float deltaY, float deltaZ, boolean mirror) {
+            super(tW, tH, texU, texV, x, y, z, dx, dy, dz, deltaX, deltaY, deltaZ, mirror, 4, isLeft);
+        }
+
         @Override
         protected void initQuads(int tW, int tH, int texU, int texV, int dx, int dy, int dz, boolean mirror,
                 boolean isLeft, PositionTextureVertex vertex, PositionTextureVertex vertex1,
@@ -115,6 +133,11 @@ public class WildfireModelRenderer {
         public BreastModelBox(int tW, int tH, int texU, int texV, float x, float y, float z, int dx, int dy, int dz,
                 float delta, boolean mirror) {
             super(tW, tH, texU, texV, x, y, z, dx, dy, dz, delta, mirror);
+        }
+
+        public BreastModelBox(int tW, int tH, int texU, int texV, float x, float y, float z, int dx, int dy, int dz,
+                float deltaX, float deltaY, float deltaZ, boolean mirror) {
+            super(tW, tH, texU, texV, x, y, z, dx, dy, dz, deltaX, deltaY, deltaZ, mirror, 5, false);
         }
 
         @Override

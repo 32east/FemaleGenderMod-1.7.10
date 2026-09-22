@@ -44,6 +44,26 @@ public class GenderLayer {
 
     private static final float DEG_PER_RAD = 180F / (float) Math.PI;
 
+    private static final ResourceLocation ITEM_GLINT = new ResourceLocation("textures/misc/enchanted_item_glint.png");
+
+    /**
+     * How far each layer sits outside the one below it, in model pixels.
+     *
+     * <p>Skin, jacket and armor are the same box drawn three times, so without this they share faces and
+     * the depth test picks a winner per pixel -- the speckled "flickering skin" over the chest. The top
+     * face was the worst of it: scaling a box whose origin is its top inner front corner moves every face
+     * except that one. Inflating the boxes instead keeps the nesting honest, and X is left to the
+     * widening below so the inner faces stay on the body centre line.</p>
+     */
+    private static final float WEAR_INFLATE = 0.25F;
+
+    private static final float ARMOR_INFLATE = 0.55F;
+
+    /** Outward widening per layer; the boxes pivot on their inner edge, so this only moves the outer face. */
+    private static final float WEAR_WIDEN = 1.05F;
+
+    private static final float ARMOR_WIDEN = 1.1F;
+
     /** Breast boxes keyed by (depth, skin height), since both change the geometry and the UVs. */
     private final Map<Integer, BreastModelBox[]> breastCache = new HashMap<Integer, BreastModelBox[]>();
 
@@ -53,11 +73,15 @@ public class GenderLayer {
     private final BreastModelBox rBoobArmor;
 
     public GenderLayer() {
-        lBreastWear = new OverlayModelBox(true, 64, 64, 17, 34, -4F, 0.0F, 0F, 4, 5, 3, 0.0F, false);
-        rBreastWear = new OverlayModelBox(false, 64, 64, 21, 34, 0, 0.0F, 0F, 4, 5, 3, 0.0F, false);
+        lBreastWear = new OverlayModelBox(true, 64, 64, 17, 34, -4F, 0.0F, 0F, 4, 5, 3,
+                0F, WEAR_INFLATE, WEAR_INFLATE, false);
+        rBreastWear = new OverlayModelBox(false, 64, 64, 21, 34, 0, 0.0F, 0F, 4, 5, 3,
+                0F, WEAR_INFLATE, WEAR_INFLATE, false);
 
-        lBoobArmor = new BreastModelBox(64, 32, 16, 17, -4F, 0.0F, 0F, 4, 5, 3, 0.0F, false);
-        rBoobArmor = new BreastModelBox(64, 32, 20, 17, 0, 0.0F, 0F, 4, 5, 3, 0.0F, false);
+        lBoobArmor = new BreastModelBox(64, 32, 16, 17, -4F, 0.0F, 0F, 4, 5, 3,
+                0F, ARMOR_INFLATE, ARMOR_INFLATE, false);
+        rBoobArmor = new BreastModelBox(64, 32, 20, 17, 0, 0.0F, 0F, 4, 5, 3,
+                0F, ARMOR_INFLATE, ARMOR_INFLATE, false);
     }
 
     private BreastModelBox[] getBreasts(int depth, int skinHeight) {
@@ -167,10 +191,10 @@ public class GenderLayer {
         GL11.glColor4f(1f, 1f, 1f, 1f);
         renderBreastWithTransforms(ent, model, armorStack, skin, wear, boxes[0], lBreastWear, lBoobArmor, bounceEnabled,
                 lTotalX, lTotal, leftBounceRotation, breastSize, breastOffsetX, breastOffsetY, breastOffsetZ, zOff,
-                outwardAngle, breasts.isUniboob(), isChestplateOccupied, breathingAnimation, true);
+                outwardAngle, breasts.isUniboob(), isChestplateOccupied, breathingAnimation, true, partialTicks);
         renderBreastWithTransforms(ent, model, armorStack, skin, wear, boxes[1], rBreastWear, rBoobArmor, bounceEnabled,
                 rTotalX, rTotal, rightBounceRotation, breastSize, -breastOffsetX, breastOffsetY, breastOffsetZ, zOff,
-                -outwardAngle, breasts.isUniboob(), isChestplateOccupied, breathingAnimation, false);
+                -outwardAngle, breasts.isUniboob(), isChestplateOccupied, breathingAnimation, false, partialTicks);
         GL11.glColor4f(1f, 1f, 1f, 1f);
     }
 
@@ -179,7 +203,7 @@ public class GenderLayer {
             BreastModelBox breastArmor, boolean bounceEnabled, float totalX, float total, float bounceRotation,
             float breastSize, float breastOffsetX, float breastOffsetY, float breastOffsetZ, float zOff,
             float outwardAngle, boolean uniboob, boolean isChestplateOccupied, boolean breathingAnimation,
-            boolean left) {
+            boolean left, float partialTicks) {
         GL11.glPushMatrix();
         try {
             ModelRenderer body = model.bipedBody;
@@ -237,22 +261,22 @@ public class GenderLayer {
 
             GL11.glScalef(0.9995f, 1f, 1f); // nudge the two halves apart so they do not z-fight
 
-            renderBreast(entity, armorStack, skin, wear, breast, breastWear, breastArmor, left);
+            renderBreast(entity, armorStack, skin, wear, breast, breastWear, breastArmor, left, partialTicks);
         } finally {
             GL11.glPopMatrix();
         }
     }
 
     private void renderBreast(AbstractClientPlayer entity, ItemStack armorStack, ResourceLocation skin, boolean wear,
-            BreastModelBox breast, OverlayModelBox breastWear, BreastModelBox breastArmor, boolean left) {
+            BreastModelBox breast, OverlayModelBox breastWear, BreastModelBox breastArmor, boolean left,
+            float partialTicks) {
         Minecraft mc = Minecraft.getMinecraft();
         mc.getTextureManager().bindTexture(skin);
         renderBox(breast);
 
         if (wear) {
             GL11.glPushMatrix();
-            GL11.glTranslatef(0, 0, -0.015f);
-            GL11.glScalef(1.05f, 1.05f, 1.05f);
+            wearTransform();
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             renderBox(breastWear);
@@ -260,17 +284,18 @@ public class GenderLayer {
             GL11.glPopMatrix();
         }
 
+        boolean armorDrawn = false;
         if (armorStack != null && armorStack.getItem() instanceof ItemArmor) {
             ItemArmor armorItem = (ItemArmor) armorStack.getItem();
             GL11.glPushMatrix();
-            GL11.glTranslatef(left ? 0.001f : -0.001f, 0.015f, -0.015f);
-            GL11.glScalef(1.05f, 1, 1);
+            armorTransform(left);
 
             // Armor pass 1 is the chestplate layer; a color other than -1 means it is dyeable and
             // gets a second, undyed overlay pass, the same way RenderPlayer does it.
             ResourceLocation armorTexture = RenderBiped.getArmorResource(entity, armorStack, 1, null);
             int color = armorItem.getColor(armorStack);
             if (armorTexture != null) {
+                armorDrawn = true;
                 if (color != -1) {
                     GL11.glColor4f((color >> 16 & 255) / 255.0F, (color >> 8 & 255) / 255.0F, (color & 255) / 255.0F, 1F);
                 }
@@ -285,10 +310,106 @@ public class GenderLayer {
                         renderBox(breastArmor);
                     }
                 }
+
+                if (armorStack.isItemEnchanted()) {
+                    renderGlint(mc, breastArmor, entity.ticksExisted + partialTicks);
+                }
             }
             GL11.glPopMatrix();
             mc.getTextureManager().bindTexture(skin);
         }
+
+        if (entity.hurtTime > 0 || entity.deathTime > 0) {
+            renderHurtOverlay(entity, partialTicks, breast, wear ? breastWear : null,
+                    armorDrawn ? breastArmor : null, left);
+        }
+    }
+
+    /** Widening of the jacket copy; the hurt overlay has to repeat it, so it lives in one place. */
+    private static void wearTransform() {
+        // Y and Z clearance comes from the box inflation; this only pushes the outward face out
+        GL11.glScalef(WEAR_WIDEN, 1f, 1f);
+    }
+
+    /** As {@link #wearTransform()}, for the armor copy. */
+    private static void armorTransform(boolean left) {
+        GL11.glTranslatef(left ? 0.001f : -0.001f, 0f, 0f);
+        GL11.glScalef(ARMOR_WIDEN, 1f, 1f);
+    }
+
+    /**
+     * The enchantment shimmer, lifted out of {@code RendererLivingEntity}.
+     *
+     * <p>Vanilla draws it as part of the armor passes, which are long finished by the time
+     * {@code renderEquippedItems} fires this layer, so the breast copy of the chestplate has to redo it
+     * for itself. {@code GL_EQUAL} lights up only fragments the armor box just wrote, so this has to run
+     * under the same matrix and with the same geometry as the pass above.</p>
+     */
+    private static void renderGlint(Minecraft mc, ModelBox box, float animationTime) {
+        mc.getTextureManager().bindTexture(ITEM_GLINT);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glDepthFunc(GL11.GL_EQUAL);
+        GL11.glDepthMask(false);
+        GL11.glDisable(GL11.GL_LIGHTING);
+        for (int pass = 0; pass < 2; pass++) {
+            float brightness = 0.76F;
+            GL11.glColor4f(0.5F * brightness, 0.25F * brightness, 0.8F * brightness, 1F);
+            GL11.glBlendFunc(GL11.GL_SRC_COLOR, GL11.GL_ONE);
+            GL11.glMatrixMode(GL11.GL_TEXTURE);
+            GL11.glLoadIdentity();
+            GL11.glScalef(0.33333334F, 0.33333334F, 0.33333334F);
+            GL11.glRotatef(30F - pass * 60F, 0F, 0F, 1F);
+            GL11.glTranslatef(0F, animationTime * (0.001F + pass * 0.003F) * 20F, 0F);
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            renderBox(box);
+        }
+        GL11.glMatrixMode(GL11.GL_TEXTURE);
+        GL11.glLoadIdentity();
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glColor4f(1F, 1F, 1F, 1F);
+        GL11.glDepthMask(true);
+        GL11.glEnable(GL11.GL_LIGHTING);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDepthFunc(GL11.GL_LEQUAL);
+    }
+
+    /**
+     * The red flash of a hurt entity, also out of {@code RendererLivingEntity}.
+     *
+     * <p>Vanilla draws it over the main model and every armor pass <em>after</em>
+     * {@code renderEquippedItems}, and it only ever re-renders models it knows about, so the breasts
+     * stayed their normal colour while the rest of the player went red. Every box that could have won a
+     * pixel is repeated here; {@code GL_EQUAL} then tints only the fragments that actually did.</p>
+     */
+    private static void renderHurtOverlay(AbstractClientPlayer entity, float partialTicks, ModelBox breast,
+            ModelBox breastWear, ModelBox breastArmor, boolean left) {
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_ALPHA_TEST);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDepthFunc(GL11.GL_EQUAL);
+        GL11.glColor4f(entity.getBrightness(partialTicks), 0F, 0F, 0.4F);
+
+        renderBox(breast);
+        if (breastWear != null) {
+            GL11.glPushMatrix();
+            wearTransform();
+            renderBox(breastWear);
+            GL11.glPopMatrix();
+        }
+        if (breastArmor != null) {
+            GL11.glPushMatrix();
+            armorTransform(left);
+            renderBox(breastArmor);
+            GL11.glPopMatrix();
+        }
+
+        GL11.glColor4f(1F, 1F, 1F, 1F);
+        GL11.glDepthFunc(GL11.GL_LEQUAL);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glEnable(GL11.GL_ALPHA_TEST);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
     }
 
     private static void renderBox(ModelBox box) {

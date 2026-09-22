@@ -46,6 +46,7 @@ public class AutoTest {
     private int ticks = 0;
     private int bounceShots = 0;
     private boolean leatherRound = false;
+    private boolean enchantedRound = false;
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
@@ -145,9 +146,21 @@ public class AutoTest {
 
             case 8:
                 if (ticks > SETTLE) {
-                    shot(mc, "06-female-armor-front");
-                    configure(mc, Gender.FEMALE, 0.8F, true);
-                    next();
+                    if (!enchantedRound) {
+                        shot(mc, "06-female-armor-front");
+                        // The shimmer is a pass of its own over the armor box: the vanilla one runs
+                        // before this layer is even called, so without it the breasts stay dull while
+                        // the rest of the chestplate sparkles
+                        enchantChestplate(mc);
+                        enchantedRound = true;
+                        ticks = 0;
+                    } else {
+                        shot(mc, "06b-female-armor-enchanted");
+                        // Back to a plain chestplate, so the physics shots are not full of sparkles
+                        giveChestplate(mc, net.minecraft.init.Items.iron_chestplate);
+                        configure(mc, Gender.FEMALE, 0.8F, true);
+                        next();
+                    }
                 }
                 break;
 
@@ -223,12 +236,23 @@ public class AutoTest {
 
             case 15:
                 if (ticks > 5) {
+                    mc.gameSettings.hideGUI = true;
                     hurtSelf(mc);
                     next();
                 }
                 break;
 
             case 16:
+                // hurtTime counts ten ticks down from the hit and the flash comes back from the
+                // server, so a couple of ticks in is the safe place to catch it
+                if (ticks > 3) {
+                    WildfireGender.LOGGER.info("[autotest] hurtTime=" + mc.thePlayer.hurtTime);
+                    shot(mc, "11-female-hurt-flash");
+                    next();
+                }
+                break;
+
+            case 17:
                 if (ticks > 20) {
                     WildfireGender.LOGGER.info("[autotest] done, shutting down");
                     mc.shutdown();
@@ -278,6 +302,18 @@ public class AutoTest {
                 && (!armor.coversBreasts() || (plr.hasArmorBreastPhysics() && resistance < 1));
         WildfireGender.LOGGER.info("[autotest] equipped " + chestplate.getUnlocalizedName()
                 + " resistance=" + resistance + " tightness=" + armor.tightness() + " bounceEnabled=" + bounce);
+    }
+
+    /** Enchants the worn chestplate, so the glint pass over the breasts gets exercised. */
+    private static void enchantChestplate(Minecraft mc) {
+        net.minecraft.item.ItemStack stack = mc.thePlayer.inventory.armorInventory[2];
+        if (stack == null) {
+            WildfireGender.LOGGER.warn("[autotest] no chestplate to enchant");
+            return;
+        }
+        stack.addEnchantment(net.minecraft.enchantment.Enchantment.unbreaking, 3);
+        WildfireGender.LOGGER.info("[autotest] enchanted " + stack.getUnlocalizedName()
+                + " isItemEnchanted=" + stack.isItemEnchanted());
     }
 
     /** Logs the live bounce offset, so "static in armor" can be checked as a number. */
