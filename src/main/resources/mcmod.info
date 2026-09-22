@@ -1,0 +1,15 @@
+[
+{
+  "modid": "femalegender",
+  "name": "Female Gender Mod",
+  "description": "Adds breasts with optional physics to the player model. A 1.7.10 port of Wildfire's Female Gender Mod.",
+  "version": "${modVersion}",
+  "mcversion": "${minecraftVersion}",
+  "url": "https://github.com/FemaleGenderMod/FemaleGenderMod",
+  "authorList": ["WildfireRomeo", "1.7.10 port"],
+  "credits": "Original mod by WildfireRomeo, licensed under the GNU LGPLv3",
+  "logoFile": "/icon.png",
+  "screenshots": [],
+  "dependencies": []
+}
+]

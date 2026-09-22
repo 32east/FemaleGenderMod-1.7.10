@@ -1,0 +1,39 @@
+key.categories.femalegender=Female Gender Mod
+key.femalegender.gender_menu=Open Customization Settings
+
+femalegender.label.female=Female
+femalegender.label.male=Male
+femalegender.label.other=Other
+femalegender.label.gender=Gender
+femalegender.label.enabled=Enabled
+femalegender.label.disabled=Disabled
+femalegender.label.yes=Yes
+femalegender.label.no=No
+femalegender.label.exit=Exit
+
+femalegender.wardrobe.title=Wardrobe
+femalegender.appearance_settings.title=Appearance Settings
+femalegender.char_settings.title=Character Settings
+
+femalegender.wardrobe.slider.breast_size=Breast Size: %s%%
+femalegender.wardrobe.slider.separation=Separation: %s
+femalegender.wardrobe.slider.height=Height: %s
+femalegender.wardrobe.slider.depth=Depth: %s
+femalegender.wardrobe.slider.rotation=Rotation: %s
+femalegender.breast_customization.dual_physics=Dual Physics: %s
+
+femalegender.char_settings.physics=Breast Physics: %s
+femalegender.char_settings.armor_physics=Physics in Armor: %s
+femalegender.char_settings.hide_in_armor=Hide in Armor: %s
+femalegender.char_settings.hurt_sounds=Female Hurt Sounds: %s
+
+femalegender.slider.bounce=Bounce: %sx
+femalegender.slider.max_bounce=Bounce: MAX
+femalegender.slider.min_bounce=Bounce: NONE
+femalegender.slider.floppy=Floppiness: %s%%
+
+femalegender.tooltip.breast_physics=Makes breasts bounce with your movement.
+femalegender.tooltip.armor_physics=Keeps physics active while wearing a chestplate.
+femalegender.tooltip.hide_in_armor=Hides breasts entirely while wearing a chestplate.
+femalegender.tooltip.hurt_sounds=Replaces your hurt sound with a female one.
+femalegender.tooltip.bounce_warning=High bounce values may look unnatural.

@@ -1,0 +1,39 @@
+key.categories.femalegender=Female Gender Mod
+key.femalegender.gender_menu=Открыть настройки внешности
+
+femalegender.label.female=Женский
+femalegender.label.male=Мужской
+femalegender.label.other=Другой
+femalegender.label.gender=Пол
+femalegender.label.enabled=Вкл
+femalegender.label.disabled=Выкл
+femalegender.label.yes=Да
+femalegender.label.no=Нет
+femalegender.label.exit=Выход
+
+femalegender.wardrobe.title=Гардероб
+femalegender.appearance_settings.title=Настройки внешности
+femalegender.char_settings.title=Настройки персонажа
+
+femalegender.wardrobe.slider.breast_size=Размер груди: %s%%
+femalegender.wardrobe.slider.separation=Расстояние: %s
+femalegender.wardrobe.slider.height=Высота: %s
+femalegender.wardrobe.slider.depth=Глубина: %s
+femalegender.wardrobe.slider.rotation=Поворот: %s
+femalegender.breast_customization.dual_physics=Раздельная физика: %s
+
+femalegender.char_settings.physics=Физика груди: %s
+femalegender.char_settings.armor_physics=Физика в броне: %s
+femalegender.char_settings.hide_in_armor=Скрывать под бронёй: %s
+femalegender.char_settings.hurt_sounds=Женские звуки урона: %s
+
+femalegender.slider.bounce=Колебание: %sx
+femalegender.slider.max_bounce=Колебание: МАКС
+femalegender.slider.min_bounce=Колебание: НЕТ
+femalegender.slider.floppy=Мягкость: %s%%
+
+femalegender.tooltip.breast_physics=Грудь колышется при движении.
+femalegender.tooltip.armor_physics=Физика продолжает работать в нагруднике.
+femalegender.tooltip.hide_in_armor=Полностью скрывать грудь в нагруднике.
+femalegender.tooltip.hurt_sounds=Заменяет звук получения урона на женский.
+femalegender.tooltip.bounce_warning=Высокие значения выглядят неестественно.

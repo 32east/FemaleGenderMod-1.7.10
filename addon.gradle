@@ -1,0 +1,11 @@
+// Extra build configuration on top of the GTNH convention.
+
+// `./gradlew runClient -Pautotest` boots a flat world, poses the player, writes
+// screenshots into run/client/screenshots and quits. See com.wildfire.debug.AutoTest.
+tasks.configureEach { task ->
+    if (task.name.startsWith('runClient') && task instanceof JavaExec) {
+        if (project.hasProperty('autotest')) {
+            task.jvmArgs '-Dfemalegender.autotest=true'
+        }
+    }
+}

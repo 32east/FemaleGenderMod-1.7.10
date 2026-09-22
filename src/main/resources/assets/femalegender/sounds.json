@@ -1,0 +1,10 @@
+{
+  "female_hurt1": {
+    "category": "player",
+    "sounds": [ { "name": "female_hurt1", "stream": false } ]
+  },
+  "female_hurt2": {
+    "category": "player",
+    "sounds": [ { "name": "female_hurt2", "stream": false } ]
+  }
+}
