@@ -45,6 +45,7 @@ public class AutoTest {
     private int state = 0;
     private int ticks = 0;
     private int bounceShots = 0;
+    private boolean leatherRound = false;
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
@@ -120,7 +121,7 @@ public class AutoTest {
             case 6: // player turned 90 degrees, camera still behind: side profile
                 if (ticks > SETTLE) {
                     shot(mc, "05-female-side");
-                    giveChestplate(mc);
+                    giveChestplate(mc, net.minecraft.init.Items.iron_chestplate);
                     next();
                 }
                 break;
@@ -140,7 +141,7 @@ public class AutoTest {
                 }
                 break;
 
-            case 9: // physics: jump around and capture a few frames
+            case 9: // physics: jump around and capture frames, once in iron and once in leather
                 if (mc.thePlayer != null) {
                     mc.thePlayer.rotationPitch = 0;
                     if (mc.thePlayer.onGround && ticks % 18 == 0) {
@@ -148,9 +149,18 @@ public class AutoTest {
                     }
                 }
                 if (ticks % 6 == 0) {
-                    shot(mc, "07-physics-" + bounceShots);
+                    reportBounce(mc, leatherRound ? "leather" : "iron");
+                    shot(mc, (leatherRound ? "07b-physics-leather-" : "07-physics-iron-") + bounceShots);
                     if (++bounceShots >= 6) {
-                        next();
+                        if (leatherRound) {
+                            next();
+                        } else {
+                            // Iron has physicsResistance 1, leather 0.3: the two rounds should differ
+                            leatherRound = true;
+                            bounceShots = 0;
+                            ticks = 0;
+                            giveChestplate(mc, net.minecraft.init.Items.leather_chestplate);
+                        }
                     }
                 }
                 break;
@@ -246,10 +256,25 @@ public class AutoTest {
         WildfireGender.LOGGER.info("[autotest] gender=" + gender + " bust=" + bust + " physics=" + physics);
     }
 
-    private static void giveChestplate(Minecraft mc) {
-        mc.thePlayer.inventory.armorInventory[2] =
-                new net.minecraft.item.ItemStack(net.minecraft.init.Items.iron_chestplate);
-        WildfireGender.LOGGER.info("[autotest] equipped iron chestplate");
+    private static void giveChestplate(Minecraft mc, net.minecraft.item.Item chestplate) {
+        mc.thePlayer.inventory.armorInventory[2] = new net.minecraft.item.ItemStack(chestplate);
+        com.wildfire.api.IGenderArmor armor =
+                com.wildfire.main.WildfireHelper.getArmorConfig(mc.thePlayer.getEquipmentInSlot(3));
+        GenderPlayer plr = WildfireGender.getOrAddPlayerById(mc.thePlayer.getUniqueID());
+        float resistance = com.wildfire.main.WildfireHelper.clamp(armor.physicsResistance(), 0, 1);
+        boolean bounce = plr.hasBreastPhysics()
+                && (!armor.coversBreasts() || (plr.hasArmorBreastPhysics() && resistance < 1));
+        WildfireGender.LOGGER.info("[autotest] equipped " + chestplate.getUnlocalizedName()
+                + " resistance=" + resistance + " tightness=" + armor.tightness() + " bounceEnabled=" + bounce);
+    }
+
+    /** Logs the live bounce offset, so "static in armor" can be checked as a number. */
+    private static void reportBounce(Minecraft mc, String label) {
+        GenderPlayer plr = WildfireGender.getPlayerById(mc.thePlayer.getUniqueID());
+        if (plr != null) {
+            WildfireGender.LOGGER.info(String.format("[autotest] bounce(%s) y=%.4f rot=%.4f", label,
+                    plr.getLeftBreastPhysics().getBounceY(), plr.getLeftBreastPhysics().getBounceRotation()));
+        }
     }
 
     /** Confirms the sounds.json in our jar was actually parsed and registered. */
