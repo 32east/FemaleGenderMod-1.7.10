@@ -7,8 +7,10 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public abstract class BaseWildfireScreen extends GuiScreen {
 
@@ -53,10 +55,19 @@ public abstract class BaseWildfireScreen extends GuiScreen {
             WildfireButton wb = (WildfireButton) button;
             if (wb.visible && wb.isHovered() && wb.getTooltip() != null) {
                 // Long single-line tooltips get pushed off the left edge, so lang files break them up
-                drawHoveringText(java.util.Arrays.asList(wb.getTooltip().split("\\n")), mouseX, mouseY,
-                        fontRendererObj);
+                drawHoveringText(splitLines(wb.getTooltip()), mouseX, mouseY, fontRendererObj);
                 return;
             }
         }
+    }
+
+    /**
+     * Splits a translated string on the literal two characters {@code \} and {@code n}.
+     *
+     * <p>.lang files keep that escape as-is; nothing turns it into a real line break, so the
+     * separator has to be matched literally rather than as the regex for a newline.</p>
+     */
+    public static List<String> splitLines(String text) {
+        return Arrays.asList(text.split(Pattern.quote("\\n")));
     }
 }

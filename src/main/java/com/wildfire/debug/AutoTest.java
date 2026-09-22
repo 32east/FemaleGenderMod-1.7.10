@@ -77,6 +77,7 @@ public class AutoTest {
                 if (mc.thePlayer != null && mc.theWorld != null && mc.currentScreen == null && ticks > 100) {
                     WildfireGender.LOGGER.info("[autotest] world ready");
                     reportSoundRegistration(mc);
+                    reportTooltipSplitting();
                     mc.gameSettings.thirdPersonView = 2; // front-facing third person
                     mc.gameSettings.hideGUI = true;
                     configure(mc, Gender.MALE, 0.8F, false);
@@ -262,6 +263,13 @@ public class AutoTest {
         } catch (Throwable t) {
             WildfireGender.LOGGER.error("[autotest] sound lookup failed", t);
         }
+    }
+
+    /** Confirms the lang files' line breaks survive translation and actually split. */
+    private static void reportTooltipSplitting() {
+        String raw = net.minecraft.util.StatCollector.translateToLocal("femalegender.tooltip.hide_in_armor");
+        java.util.List<String> lines = com.wildfire.gui.screen.BaseWildfireScreen.splitLines(raw);
+        WildfireGender.LOGGER.info("[autotest] tooltip lines=" + lines.size() + " " + lines);
     }
 
     /** Damages the player server-side so the real hurt-sound path runs. */
