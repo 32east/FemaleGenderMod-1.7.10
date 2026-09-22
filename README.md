@@ -67,6 +67,9 @@ It copies the **reobfuscated** jar (not the `-dev` one, which keeps MCP names an
 with `NoSuchMethodError`) to `mods/femalegender.jar`, under a fixed name so a stale build cannot be
 picked up by mistake. Point it elsewhere with `FGM_PACK_MODS`.
 
+Close the game first. Forge loads classes out of the jar lazily, so replacing it under a running
+client makes the next not-yet-loaded class fail with `NoClassDefFoundError`.
+
 ## Testing
 
 `com.wildfire.debug.AutoTest` scripts the client: it creates a flat world, poses the player through
