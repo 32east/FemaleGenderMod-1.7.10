@@ -113,10 +113,14 @@ public class PacketGenderInfo implements IMessage {
         @Override
         public IMessage onMessage(PacketGenderInfo message, MessageContext ctx) {
             EntityPlayerMP sender = ctx.getServerHandler().playerEntity;
-            // Only ever let a client speak for itself
-            if (sender == null || !sender.getUniqueID().equals(message.uuid)) {
+            if (sender == null) {
                 return null;
             }
+            // The sender's own identity wins over whatever the packet claims. That stops a client
+            // speaking for anyone else, and it is also the only id the other clients will know the
+            // player by: on an offline-mode server the client's session UUID and the one the server
+            // derives from the name do not have to match.
+            message.uuid = sender.getUniqueID();
             message.applyTo(WildfireGender.getOrAddPlayerById(message.uuid));
             // Relay to everyone, including the sender, so all clients agree on what to draw
             WildfireNetwork.CHANNEL.sendToAll(message);
