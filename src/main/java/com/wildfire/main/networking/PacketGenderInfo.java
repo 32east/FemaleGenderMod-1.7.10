@@ -1,6 +1,7 @@
 package com.wildfire.main.networking;
 
 import com.wildfire.main.Breasts;
+import com.wildfire.main.BreastShape;
 import com.wildfire.main.Gender;
 import com.wildfire.main.GenderPlayer;
 import com.wildfire.main.WildfireGender;
@@ -32,6 +33,7 @@ public class PacketGenderInfo implements IMessage {
     private float zOffset;
     private boolean uniboob;
     private float cleavage;
+    private BreastShape breastShape = BreastShape.CLASSIC;
 
     public PacketGenderInfo() {
     }
@@ -52,6 +54,7 @@ public class PacketGenderInfo implements IMessage {
         this.zOffset = b.getZOffset();
         this.uniboob = b.isUniboob();
         this.cleavage = b.getCleavage();
+        this.breastShape = b.getShape();
     }
 
     @Override
@@ -70,6 +73,10 @@ public class PacketGenderInfo implements IMessage {
         zOffset = buf.readFloat();
         uniboob = buf.readBoolean();
         cleavage = buf.readFloat();
+        // Shape was appended in 0.1.2. A packet from an older client simply keeps CLASSIC.
+        if (buf.isReadable()) {
+            breastShape = BreastShape.byIndex(buf.readUnsignedByte());
+        }
     }
 
     @Override
@@ -88,6 +95,7 @@ public class PacketGenderInfo implements IMessage {
         buf.writeFloat(zOffset);
         buf.writeBoolean(uniboob);
         buf.writeFloat(cleavage);
+        buf.writeByte(breastShape.ordinal());
     }
 
     private void applyTo(GenderPlayer plr) {
@@ -105,6 +113,7 @@ public class PacketGenderInfo implements IMessage {
         b.updateZOffset(zOffset);
         b.updateUniboob(uniboob);
         b.updateCleavage(cleavage);
+        b.updateShape(breastShape);
         plr.syncStatus = GenderPlayer.SyncStatus.SYNCED;
     }
 

@@ -22,6 +22,9 @@ femalegender.wardrobe.slider.height=Height: %s
 femalegender.wardrobe.slider.depth=Depth: %s
 femalegender.wardrobe.slider.rotation=Rotation: %s
 femalegender.breast_customization.dual_physics=Dual Physics: %s
+femalegender.breast_customization.shape=Shape: %s
+femalegender.breast_shape.classic=Classic
+femalegender.breast_shape.round=Round
 
 femalegender.char_settings.physics=Breast Physics: %s
 femalegender.char_settings.armor_physics=Physics in Armor: %s

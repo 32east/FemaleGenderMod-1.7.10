@@ -1,6 +1,7 @@
 package com.wildfire.debug;
 
 import com.wildfire.main.Gender;
+import com.wildfire.main.BreastShape;
 import com.wildfire.main.GenderPlayer;
 import com.wildfire.main.WildfireGender;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -46,7 +47,8 @@ public class AutoTest {
     private int ticks = 0;
     private int bounceShots = 0;
     private boolean leatherRound = false;
-    private boolean enchantedRound = false;
+    private int armorShot = 0;
+    private int roundShot = 0;
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
@@ -57,8 +59,8 @@ public class AutoTest {
         ticks++;
 
         if (state >= 2 && state <= 8 && mc.thePlayer != null) {
-            // Camera yaw stays put; only the body turns, so step 6 gives a side profile
-            holdStill(mc.thePlayer, 0F, state == 6 ? 90F : 0F);
+            // Camera yaw stays put; only the body turns, so the profile shots come for free
+            holdStill(mc.thePlayer, 0F, bodyYaw());
         }
 
         switch (state) {
@@ -89,6 +91,10 @@ public class AutoTest {
                     reportSoundsJsonProviders(mc);
                     mc.gameSettings.thirdPersonView = 2; // front-facing third person
                     mc.gameSettings.hideGUI = true;
+                    // Shots are compared against each other across runs, so neither the window the OS
+                    // happens to open nor the user's field of view may decide the framing
+                    mc.gameSettings.fovSetting = 40F;
+                    resizeWindow(mc, 1280, 720);
                     // Without this an unfocused window opens the pause menu, which stops the
                     // integrated server: the world freezes and every physics frame comes out identical
                     mc.gameSettings.pauseOnLostFocus = false;
@@ -107,9 +113,24 @@ public class AutoTest {
 
             case 3:
                 if (ticks > SETTLE) {
-                    shot(mc, "02-female-front");
-                    configure(mc, Gender.FEMALE, 1.0F, false);
-                    next();
+                    // One pass per camera angle: the rounded shape is a volume, so the front view alone
+                    // cannot tell a real curve from a flat plate with shading on it
+                    if (roundShot == 0) {
+                        shot(mc, "02-female-front");
+                        setShape(mc, BreastShape.ROUND);
+                    } else if (roundShot == 1) {
+                        shot(mc, "02b-female-round-front");
+                    } else if (roundShot == 2) {
+                        shot(mc, "02c-female-round-side");
+                    } else {
+                        shot(mc, "02d-female-round-three-quarter");
+                        setShape(mc, BreastShape.CLASSIC);
+                        configure(mc, Gender.FEMALE, 1.0F, false);
+                        next();
+                        break;
+                    }
+                    roundShot++;
+                    ticks = 0;
                 }
                 break;
 
@@ -146,21 +167,28 @@ public class AutoTest {
 
             case 8:
                 if (ticks > SETTLE) {
-                    if (!enchantedRound) {
+                    if (armorShot == 0) {
                         shot(mc, "06-female-armor-front");
                         // The shimmer is a pass of its own over the armor box: the vanilla one runs
                         // before this layer is even called, so without it the breasts stay dull while
                         // the rest of the chestplate sparkles
                         enchantChestplate(mc);
-                        enchantedRound = true;
-                        ticks = 0;
-                    } else {
+                    } else if (armorShot == 1) {
                         shot(mc, "06b-female-armor-enchanted");
                         // Back to a plain chestplate, so the physics shots are not full of sparkles
                         giveChestplate(mc, net.minecraft.init.Items.iron_chestplate);
+                        // The rounded layers nest by inflating along the normal instead of widening
+                        // sideways, so the armor copy needs a look of its own
+                        setShape(mc, BreastShape.ROUND);
+                    } else {
+                        shot(mc, "06c-female-armor-round");
+                        setShape(mc, BreastShape.CLASSIC);
                         configure(mc, Gender.FEMALE, 0.8F, true);
                         next();
+                        break;
                     }
+                    armorShot++;
+                    ticks = 0;
                 }
                 break;
 
@@ -265,9 +293,33 @@ public class AutoTest {
         }
     }
 
+    /** Body yaw for the current step; the camera never moves, so this is what frames each shot. */
+    private float bodyYaw() {
+        if (state == 6 || (state == 3 && roundShot == 2)) {
+            return 90F;
+        }
+        if (state == 3 && roundShot == 3) {
+            return 40F;
+        }
+        return 0F;
+    }
+
+    private static void setShape(Minecraft mc, BreastShape shape) {
+        WildfireGender.getOrAddPlayerById(mc.thePlayer.getUniqueID()).getBreasts().updateShape(shape);
+    }
+
     private void next() {
         state++;
         ticks = 0;
+    }
+
+    private static void resizeWindow(Minecraft mc, int width, int height) {
+        try {
+            org.lwjgl.opengl.Display.setDisplayMode(new org.lwjgl.opengl.DisplayMode(width, height));
+            mc.resize(width, height);
+        } catch (Exception e) {
+            WildfireGender.LOGGER.warn("[autotest] could not resize to " + width + "x" + height, e);
+        }
     }
 
     private static void holdStill(EntityPlayer player, float cameraYaw, float bodyYaw) {

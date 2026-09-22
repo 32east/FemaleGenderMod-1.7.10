@@ -12,6 +12,7 @@ public class Breasts {
     private float zOffset = Configuration.BREASTS_OFFSET_Z.getDefault();
     private float cleavage = Configuration.BREASTS_CLEAVAGE.getDefault();
     private boolean uniboob = Configuration.BREASTS_UNIBOOB.getDefault();
+    private BreastShape shape = Configuration.BREASTS_SHAPE.getDefault();
 
     public float getXOffset() {
         return xOffset;
@@ -68,5 +69,17 @@ public class Breasts {
     public boolean updateUniboob(boolean value) {
         uniboob = value;
         return true;
+    }
+
+    public BreastShape getShape() {
+        return shape;
+    }
+
+    public boolean updateShape(BreastShape value) {
+        if (Configuration.BREASTS_SHAPE.validate(value)) {
+            shape = value;
+            return true;
+        }
+        return false;
     }
 }

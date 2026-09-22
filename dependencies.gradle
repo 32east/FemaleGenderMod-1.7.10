@@ -35,4 +35,10 @@
  */
 dependencies {
     //runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.69-GTNH:dev")
+    // Dev only: a SkinPort jar dropped in here gives the test client real 64x64 skins. The released
+    // jar is obfuscated, so it has to go through deobf to run against the dev mappings.
+    def skinPort = project.file("run/devmods/SkinPort-1.7.10-v10n.jar")
+    if (skinPort.exists()) {
+        runtimeOnlyNonPublishable(rfg.deobf(project.files(skinPort)))
+    }
 }

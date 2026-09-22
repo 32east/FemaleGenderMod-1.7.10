@@ -29,6 +29,7 @@ public class Configuration {
     public static final FloatConfigKey BREASTS_OFFSET_Z = new FloatConfigKey("breasts_zOffset", 0.0F, -1, 0);
     public static final BooleanConfigKey BREASTS_UNIBOOB = new BooleanConfigKey("breasts_uniboob", true);
     public static final FloatConfigKey BREASTS_CLEAVAGE = new FloatConfigKey("breasts_cleavage", 0.05F, 0, 0.1F);
+    public static final BreastShapeConfigKey BREASTS_SHAPE = new BreastShapeConfigKey("breasts_shape");
 
     public static final BooleanConfigKey BREAST_PHYSICS = new BooleanConfigKey("breast_physics", true);
     public static final BooleanConfigKey BREAST_PHYSICS_ARMOR = new BooleanConfigKey("breast_physics_armor", true);

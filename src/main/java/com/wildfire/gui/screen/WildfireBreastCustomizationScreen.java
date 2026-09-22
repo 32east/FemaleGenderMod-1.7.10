@@ -3,6 +3,7 @@ package com.wildfire.gui.screen;
 import com.wildfire.gui.WildfireButton;
 import com.wildfire.gui.WildfireSlider;
 import com.wildfire.main.Breasts;
+import com.wildfire.main.BreastShape;
 import com.wildfire.main.GenderPlayer;
 import com.wildfire.main.config.Configuration;
 import net.minecraft.client.gui.GuiButton;
@@ -18,9 +19,10 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 
     private static final int ID_EXIT = 0;
     private static final int ID_UNIBOOB = 1;
+    private static final int ID_SHAPE = 2;
 
     private WildfireSlider breastSlider, xOffsetSlider, yOffsetSlider, zOffsetSlider, cleavageSlider;
-    private WildfireButton uniboobButton;
+    private WildfireButton uniboobButton, shapeButton;
 
     public WildfireBreastCustomizationScreen(GuiScreen parent, UUID uuid) {
         super(StatCollector.translateToLocal("femalegender.appearance_settings.title"), parent, uuid);
@@ -120,11 +122,20 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
 
         uniboobButton = new WildfireButton(ID_UNIBOOB, this.width / 2 + 30, j + 57, 158, 20, dualPhysicsLabel(breasts));
         buttonList.add(uniboobButton);
+
+        shapeButton = new WildfireButton(ID_SHAPE, this.width / 2 + 30, j + 78, 158, 20, shapeLabel(breasts));
+        buttonList.add(shapeButton);
     }
 
     private static String dualPhysicsLabel(Breasts breasts) {
         return StatCollector.translateToLocalFormatted("femalegender.breast_customization.dual_physics",
                 StatCollector.translateToLocal(breasts.isUniboob() ? "femalegender.label.no" : "femalegender.label.yes"));
+    }
+
+    private static String shapeLabel(Breasts breasts) {
+        BreastShape shape = breasts.getShape();
+        return StatCollector.translateToLocalFormatted("femalegender.breast_customization.shape",
+                StatCollector.translateToLocal(shape.getTranslationKey()));
     }
 
     @Override
@@ -136,6 +147,11 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
         } else if (button.id == ID_UNIBOOB) {
             if (breasts.updateUniboob(!breasts.isUniboob())) {
                 uniboobButton.displayString = dualPhysicsLabel(breasts);
+                GenderPlayer.saveGenderInfo(plr);
+            }
+        } else if (button.id == ID_SHAPE) {
+            if (breasts.updateShape(breasts.getShape().next())) {
+                shapeButton.displayString = shapeLabel(breasts);
                 GenderPlayer.saveGenderInfo(plr);
             }
         }
@@ -173,10 +189,11 @@ public class WildfireBreastCustomizationScreen extends BaseWildfireScreen {
         zOffsetSlider.visible = canHaveBreasts;
         cleavageSlider.visible = canHaveBreasts;
         uniboobButton.visible = canHaveBreasts;
+        shapeButton.visible = canHaveBreasts;
 
         int x = this.width / 2;
         int y = this.height / 2;
-        drawRect(x + 28, y - 64, x + 190, y + 79, 0x55000000);
+        drawRect(x + 28, y - 64, x + 190, y + 100, 0x55000000);
         drawRect(x + 29, y - 63, x + 189, y - 50, 0x55000000);
         fontRendererObj.drawString(getScreenTitle(), x + 32, y - 60, 0xFFFFFF);
 

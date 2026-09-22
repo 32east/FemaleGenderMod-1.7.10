@@ -58,6 +58,7 @@ public class GenderPlayer {
             cfg.setDefault(Configuration.BREASTS_OFFSET_Z);
             cfg.setDefault(Configuration.BREASTS_UNIBOOB);
             cfg.setDefault(Configuration.BREASTS_CLEAVAGE);
+            cfg.setDefault(Configuration.BREASTS_SHAPE);
             cfg.setDefault(Configuration.BREAST_PHYSICS);
             cfg.setDefault(Configuration.BREAST_PHYSICS_ARMOR);
             cfg.setDefault(Configuration.SHOW_IN_ARMOR);
@@ -191,6 +192,7 @@ public class GenderPlayer {
         Configuration.BREASTS_OFFSET_Z.save(obj, b.getZOffset());
         Configuration.BREASTS_UNIBOOB.save(obj, b.isUniboob());
         Configuration.BREASTS_CLEAVAGE.save(obj, b.getCleavage());
+        Configuration.BREASTS_SHAPE.save(obj, b.getShape());
         return obj;
     }
 
@@ -223,6 +225,7 @@ public class GenderPlayer {
         b.updateZOffset(config.get(Configuration.BREASTS_OFFSET_Z));
         b.updateUniboob(config.get(Configuration.BREASTS_UNIBOOB));
         b.updateCleavage(config.get(Configuration.BREASTS_CLEAVAGE));
+        b.updateShape(config.get(Configuration.BREASTS_SHAPE));
         if (markForSync) {
             plr.needsSync = true;
         }
@@ -245,6 +248,7 @@ public class GenderPlayer {
         config.set(Configuration.BREASTS_OFFSET_Z, plr.getBreasts().getZOffset());
         config.set(Configuration.BREASTS_UNIBOOB, plr.getBreasts().isUniboob());
         config.set(Configuration.BREASTS_CLEAVAGE, plr.getBreasts().getCleavage());
+        config.set(Configuration.BREASTS_SHAPE, plr.getBreasts().getShape());
         config.save();
         plr.needsSync = true;
     }
