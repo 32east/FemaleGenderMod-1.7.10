@@ -196,6 +196,18 @@ public class WildfireModelRenderer {
         /** How far the mass hangs below the centre at its most forward point. */
         private static final float DROOP = 0.46F;
 
+        /**
+         * The merged bust: the same measured volume, with the two halves pulled in towards the centre
+         * line and widened to make up for it.
+         *
+         * <p>Their union then reads as one mass with a crease down it instead of two balls set side by
+         * side, and the outer edge still lands where the split pair does. How deep the crease runs is
+         * the ratio between these two: the closer the centres sit relative to the width, the shallower
+         * the notch where the halves cross.</p>
+         */
+        private static final float MERGED_CENTER_X = 1.1F;
+        private static final float MERGED_RADIUS_X = 3.2F;
+
         /** Cells per side of the front grid. */
         private static final int GRID = 10;
 
@@ -212,19 +224,50 @@ public class WildfireModelRenderer {
         private static final float BACK_ANGLE = 40F;
         private static final float MAX_BACK_Z = 1.2F;
 
-        public RoundBreastModelBox(int tW, int tH, float texU, float texV, boolean left, float scale, float inflate) {
-            super(centerX(left) - radius(RADIUS_X, scale, inflate), CENTER_Y - radius(RADIUS_Y, scale, inflate),
+        public RoundBreastModelBox(int tW, int tH, float texU, float texV, boolean left, boolean merged,
+                float scale, float inflate) {
+            super(centerX(left, merged) - radius(radiusX(merged), scale, inflate),
+                    CENTER_Y - radius(RADIUS_Y, scale, inflate),
                     CENTER_Z * scale - radius(RADIUS_Z, scale, inflate),
-                    centerX(left) + radius(RADIUS_X, scale, inflate),
+                    centerX(left, merged) + radius(radiusX(merged), scale, inflate),
                     CENTER_Y + radius(RADIUS_Y, scale, inflate) + DROOP * scale,
                     MAX_BACK_Z,
-                    buildQuads(tW, tH, texU, texV, centerX(left), CENTER_Y, CENTER_Z * scale,
-                            radius(RADIUS_X, scale, inflate), radius(RADIUS_Y, scale, inflate),
+                    buildQuads(tW, tH, texV, uOrigin(texU, left, merged, scale, inflate),
+                            uScale(merged, scale, inflate),
+                            centerX(left, merged), CENTER_Y, CENTER_Z * scale,
+                            radius(radiusX(merged), scale, inflate), radius(RADIUS_Y, scale, inflate),
                             radius(RADIUS_Z, scale, inflate), DROOP * scale));
         }
 
-        private static float centerX(boolean left) {
-            return left ? -CENTER_X : CENTER_X;
+        private static float centerX(boolean left, boolean merged) {
+            float center = merged ? MERGED_CENTER_X : CENTER_X;
+            return left ? -center : center;
+        }
+
+        private static float radiusX(boolean merged) {
+            return merged ? MERGED_RADIUS_X : RADIUS_X;
+        }
+
+        /*
+         * The skin is projected straight on from the front, so a texture column belongs to a position
+         * across the chest: u = uOrigin + uScale * x. A split half owns its own quarter of the chest
+         * window and stretches that over itself. The merged halves overlap, so both read the same
+         * window across the whole bust instead -- otherwise each would pull the texture towards its own
+         * centre, and the two would disagree exactly where they cross.
+         */
+
+        private static float uOrigin(float texU, boolean left, boolean merged, float scale, float inflate) {
+            if (merged) {
+                return left ? texU + 4F : texU;
+            }
+            return texU + 2F - 2F * centerX(left, false) / radius(RADIUS_X, scale, inflate);
+        }
+
+        private static float uScale(boolean merged, float scale, float inflate) {
+            if (merged) {
+                return 4F / (MERGED_CENTER_X + radius(MERGED_RADIUS_X, scale, inflate));
+            }
+            return 2F / radius(RADIUS_X, scale, inflate);
         }
 
         /** Layers inflate along the surface normal, so the radius grows the same amount in every direction. */
@@ -232,7 +275,7 @@ public class WildfireModelRenderer {
             return base * scale + inflate;
         }
 
-        private static TexturedQuad[] buildQuads(int tW, int tH, float texU, float texV,
+        private static TexturedQuad[] buildQuads(int tW, int tH, float texV, float uOrigin, float uScale,
                 float cx, float cy, float cz, float a, float b, float c, float droop) {
             PositionTextureVertex[][] front = new PositionTextureVertex[GRID + 1][GRID + 1];
             for (int row = 0; row <= GRID; row++) {
@@ -243,7 +286,8 @@ public class WildfireModelRenderer {
                     // the rim of the bust instead of on a square's corners.
                     float dx = u * (float) Math.sqrt(Math.max(0D, 1D - v * v / 2D));
                     float dy = v * (float) Math.sqrt(Math.max(0D, 1D - u * u / 2D));
-                    front[row][column] = surface(tW, tH, texU, texV, cx, cy, cz, a, b, c, droop, dx, dy);
+                    front[row][column] = surface(tW, tH, uOrigin, uScale, texV, cx, cy, cz, a, b, c, droop,
+                            dx, dy);
                 }
             }
 
@@ -256,7 +300,7 @@ public class WildfireModelRenderer {
                 // carries it round the back of the ellipsoid.
                 float dx = (rim[i].x - cx) / a;
                 float dy = (rim[i].y - cy) / b;
-                collar[i] = surfaceBack(tW, tH, texU, texV, cx, cy, cz, a, b, c,
+                collar[i] = surfaceBack(tW, tH, uOrigin, uScale, texV, cx, cy, cz, a, b, c,
                         dx * backCos, dy * backCos, backSin);
             }
 
@@ -279,7 +323,7 @@ public class WildfireModelRenderer {
             // Closing fan, buried in the torso: only there so nothing shows through when the bust
             // clears the body edge under cleavage, armor or a body rotation.
             PositionTextureVertex hub = new PositionTextureVertex(cx, cy, Math.min(cz + c, MAX_BACK_Z),
-                    (texU + 2F) / tW, (texV + 2.5F) / tH).withNormal(0F, 0F, 1F);
+                    (uOrigin + uScale * cx) / tW, (texV + 2.5F) / tH).withNormal(0F, 0F, 1F);
             for (int i = 0; i < collar.length; i++) {
                 quads[index++] = new TexturedQuad(new PositionTextureVertex[] {
                         collar[i], collar[(i + 1) % collar.length], hub, hub });
@@ -293,12 +337,11 @@ public class WildfireModelRenderer {
          * @param dx horizontal position within the bust, -1 to 1
          * @param dy vertical position within the bust, -1 to 1
          */
-        private static PositionTextureVertex surface(int tW, int tH, float texU, float texV,
+        private static PositionTextureVertex surface(int tW, int tH, float uOrigin, float uScale, float texV,
                 float cx, float cy, float cz, float a, float b, float c, float droop, float dx, float dy) {
             float dz = (float) Math.sqrt(Math.max(0D, 1D - dx * dx - dy * dy));
-            // Straight-on projection: a skin's chest reads exactly as it does on the flat body, and the
-            // droop moves the mass without dragging the texture down with it.
-            float u = texU + 4F * (0.5F + 0.5F * dx);
+            // The droop moves the mass without dragging the texture down with it
+            float u = uOrigin + uScale * (cx + a * dx);
             float v = texV + 5F * (0.5F + 0.5F * dy);
             float[] n = normal(a, b, c, droop, dx, dy, dz);
             return new PositionTextureVertex(cx + a * dx, cy + b * dy + droop * dz, cz - c * dz, u / tW, v / tH)
@@ -306,9 +349,9 @@ public class WildfireModelRenderer {
         }
 
         /** As {@link #surface}, for the hidden half behind the chest plane, which never droops. */
-        private static PositionTextureVertex surfaceBack(int tW, int tH, float texU, float texV,
+        private static PositionTextureVertex surfaceBack(int tW, int tH, float uOrigin, float uScale, float texV,
                 float cx, float cy, float cz, float a, float b, float c, float dx, float dy, float back) {
-            float u = texU + 4F * (0.5F + 0.5F * dx);
+            float u = uOrigin + uScale * (cx + a * dx);
             float v = texV + 5F * (0.5F + 0.5F * dy);
             float[] n = normal(a, b, c, 0F, dx, dy, -back);
             return new PositionTextureVertex(cx + a * dx, cy + b * dy, Math.min(cz + c * back, MAX_BACK_Z),

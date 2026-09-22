@@ -4,6 +4,7 @@ package com.wildfire.main;
 public enum BreastShape {
 
     CLASSIC("femalegender.breast_shape.classic"),
+    MERGED("femalegender.breast_shape.merged"),
     ROUND("femalegender.breast_shape.round");
 
     private final String translationKey;

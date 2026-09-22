@@ -18,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.model.ModelRenderer;
+import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderBiped;
 import net.minecraft.entity.player.EntityPlayer;
@@ -117,21 +118,21 @@ public class GenderLayer {
      * The rounded pair at one size, with the same skin, jacket and armor texture windows the classic
      * boxes use -- the mesh projects them from the front, so existing skins keep working unchanged.
      */
-    private RoundModelSet getRoundBreasts(int sizeStep, int skinHeight) {
-        int key = sizeStep * 128 + skinHeight;
+    private RoundModelSet getRoundBreasts(int sizeStep, int skinHeight, boolean merged) {
+        int key = (sizeStep * 2 + (merged ? 1 : 0)) * 128 + skinHeight;
         RoundModelSet models = roundCache.get(key);
         if (models == null) {
             float scale = sizeStep / (float) ROUND_SIZE_STEPS;
             models = new RoundModelSet(
                     new ModelBox[] {
-                            new RoundBreastModelBox(64, skinHeight, 20, 21, true, scale, 0F),
-                            new RoundBreastModelBox(64, skinHeight, 24, 21, false, scale, 0F) },
+                            new RoundBreastModelBox(64, skinHeight, 20, 21, true, merged, scale, 0F),
+                            new RoundBreastModelBox(64, skinHeight, 24, 21, false, merged, scale, 0F) },
                     new ModelBox[] {
-                            new RoundBreastModelBox(64, 64, 20, 37, true, scale, WEAR_INFLATE),
-                            new RoundBreastModelBox(64, 64, 24, 37, false, scale, WEAR_INFLATE) },
+                            new RoundBreastModelBox(64, 64, 20, 37, true, merged, scale, WEAR_INFLATE),
+                            new RoundBreastModelBox(64, 64, 24, 37, false, merged, scale, WEAR_INFLATE) },
                     new ModelBox[] {
-                            new RoundBreastModelBox(64, 32, 20, 21, true, scale, ARMOR_INFLATE),
-                            new RoundBreastModelBox(64, 32, 24, 21, false, scale, ARMOR_INFLATE) });
+                            new RoundBreastModelBox(64, 32, 20, 21, true, merged, scale, ARMOR_INFLATE),
+                            new RoundBreastModelBox(64, 32, 24, 21, false, merged, scale, ARMOR_INFLATE) });
             roundCache.put(key, models);
         }
         return models;
@@ -203,7 +204,8 @@ public class GenderLayer {
         if (depth < 1) {
             depth = 1;
         }
-        boolean roundShape = breasts.getShape() == BreastShape.ROUND;
+        BreastShape shape = breasts.getShape();
+        boolean roundShape = shape != BreastShape.CLASSIC;
         ModelBox[] boxes;
         ModelBox[] wearBoxes;
         ModelBox[] armorBoxes;
@@ -212,7 +214,8 @@ public class GenderLayer {
             // coarse box depth. The exponent keeps the default 0.6 setting close to a full bust while
             // still collapsing to nothing at zero.
             float sizeFactor = (float) Math.pow(WildfireHelper.clamp(bSize, 0F, 1F), 0.65D);
-            RoundModelSet rounded = getRoundBreasts(Math.max(1, Math.round(sizeFactor * ROUND_SIZE_STEPS)), skinHeight);
+            RoundModelSet rounded = getRoundBreasts(Math.max(1, Math.round(sizeFactor * ROUND_SIZE_STEPS)),
+                    skinHeight, shape == BreastShape.MERGED);
             boxes = rounded.skin;
             wearBoxes = rounded.wear;
             armorBoxes = rounded.armor;
@@ -472,6 +475,12 @@ public class GenderLayer {
      */
     private static void renderHurtOverlay(AbstractClientPlayer entity, float partialTicks, ModelBox breast,
             ModelBox breastWear, ModelBox breastArmor, boolean left, boolean roundShape) {
+        // Vanilla turns the lightmap off before its own copy of this pass, so the flash reads the same
+        // in a cave as at noon. Leaving it on multiplies the red by the scene light: in the dark the
+        // breasts came out all but black while the rest of the player went red.
+        OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glDisable(GL11.GL_ALPHA_TEST);
         GL11.glEnable(GL11.GL_BLEND);
@@ -502,6 +511,9 @@ public class GenderLayer {
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glEnable(GL11.GL_ALPHA_TEST);
         GL11.glEnable(GL11.GL_TEXTURE_2D);
+        OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
     }
 
     /**

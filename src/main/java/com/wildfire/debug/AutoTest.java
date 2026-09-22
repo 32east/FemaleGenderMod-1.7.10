@@ -48,6 +48,10 @@ public class AutoTest {
     private int bounceShots = 0;
     private boolean leatherRound = false;
     private int armorShot = 0;
+    private int hurtShot = 0;
+
+    private static final String[] HURT_SHOTS = {
+            "11-female-hurt-flash", "11b-female-hurt-flash-round", "11c-female-hurt-flash-round-night" };
     private int roundShot = 0;
 
     @SubscribeEvent
@@ -95,6 +99,9 @@ public class AutoTest {
                     // happens to open nor the user's field of view may decide the framing
                     mc.gameSettings.fovSetting = 40F;
                     resizeWindow(mc, 1280, 720);
+                    // The hurt test ends at midnight, and a flat world at midnight spawns things that
+                    // walk over and kill the subject mid-shot
+                    setPeaceful();
                     // Without this an unfocused window opens the pause menu, which stops the
                     // integrated server: the world freezes and every physics frame comes out identical
                     mc.gameSettings.pauseOnLostFocus = false;
@@ -113,20 +120,37 @@ public class AutoTest {
 
             case 3:
                 if (ticks > SETTLE) {
-                    // One pass per camera angle: the rounded shape is a volume, so the front view alone
+                    // One pass per camera angle: a rounded shape is a volume, so the front view alone
                     // cannot tell a real curve from a flat plate with shading on it
-                    if (roundShot == 0) {
-                        shot(mc, "02-female-front");
-                        setShape(mc, BreastShape.ROUND);
-                    } else if (roundShot == 1) {
-                        shot(mc, "02b-female-round-front");
-                    } else if (roundShot == 2) {
-                        shot(mc, "02c-female-round-side");
-                    } else {
-                        shot(mc, "02d-female-round-three-quarter");
-                        setShape(mc, BreastShape.CLASSIC);
-                        configure(mc, Gender.FEMALE, 1.0F, false);
-                        next();
+                    switch (roundShot) {
+                        case 0:
+                            shot(mc, "02-female-front");
+                            setShape(mc, BreastShape.MERGED);
+                            break;
+                        case 1:
+                            shot(mc, "02b-female-merged-front");
+                            break;
+                        case 2:
+                            shot(mc, "02c-female-merged-side");
+                            break;
+                        case 3:
+                            shot(mc, "02d-female-merged-three-quarter");
+                            setShape(mc, BreastShape.ROUND);
+                            break;
+                        case 4:
+                            shot(mc, "02e-female-round-front");
+                            break;
+                        case 5:
+                            shot(mc, "02f-female-round-side");
+                            break;
+                        default:
+                            shot(mc, "02g-female-round-three-quarter");
+                            setShape(mc, BreastShape.CLASSIC);
+                            configure(mc, Gender.FEMALE, 1.0F, false);
+                            next();
+                            break;
+                    }
+                    if (state != 3) {
                         break;
                     }
                     roundShot++;
@@ -178,10 +202,13 @@ public class AutoTest {
                         // Back to a plain chestplate, so the physics shots are not full of sparkles
                         giveChestplate(mc, net.minecraft.init.Items.iron_chestplate);
                         // The rounded layers nest by inflating along the normal instead of widening
-                        // sideways, so the armor copy needs a look of its own
+                        // sideways, so the armor copies need a look of their own
+                        setShape(mc, BreastShape.MERGED);
+                    } else if (armorShot == 2) {
+                        shot(mc, "06c-female-armor-merged");
                         setShape(mc, BreastShape.ROUND);
                     } else {
-                        shot(mc, "06c-female-armor-round");
+                        shot(mc, "06d-female-armor-round");
                         setShape(mc, BreastShape.CLASSIC);
                         configure(mc, Gender.FEMALE, 0.8F, true);
                         next();
@@ -263,7 +290,8 @@ public class AutoTest {
                 break;
 
             case 15:
-                if (ticks > 5) {
+                // Damage inside the invulnerability window is swallowed, so the second round waits it out
+                if (ticks > (hurtShot == 0 ? 5 : 25)) {
                     mc.gameSettings.hideGUI = true;
                     hurtSelf(mc);
                     next();
@@ -274,9 +302,25 @@ public class AutoTest {
                 // hurtTime counts ten ticks down from the hit and the flash comes back from the
                 // server, so a couple of ticks in is the safe place to catch it
                 if (ticks > 3) {
-                    WildfireGender.LOGGER.info("[autotest] hurtTime=" + mc.thePlayer.hurtTime);
-                    shot(mc, "11-female-hurt-flash");
-                    next();
+                    WildfireGender.LOGGER.info("[autotest] hurtTime=" + mc.thePlayer.hurtTime
+                            + " shape=" + hurtShape());
+                    shot(mc, HURT_SHOTS[hurtShot]);
+                    if (hurtShot == 0) {
+                        // The red flash is a second pass of the same geometry under GL_EQUAL, so it is
+                        // worth proving on the rounded mesh and not just on the box
+                        setShape(mc, BreastShape.ROUND);
+                    } else if (hurtShot == 1) {
+                        // And again in the dark: the flash is meant to read the same whatever the light,
+                        // so this is where a pass that forgot to turn the lightmap off shows up
+                        setNight(mc);
+                    }
+                    if (hurtShot < HURT_SHOTS.length - 1) {
+                        hurtShot++;
+                        state = 15;
+                        ticks = 0;
+                    } else {
+                        next();
+                    }
                 }
                 break;
 
@@ -295,13 +339,18 @@ public class AutoTest {
 
     /** Body yaw for the current step; the camera never moves, so this is what frames each shot. */
     private float bodyYaw() {
-        if (state == 6 || (state == 3 && roundShot == 2)) {
+        if (state == 6 || (state == 3 && (roundShot == 2 || roundShot == 5))) {
             return 90F;
         }
-        if (state == 3 && roundShot == 3) {
+        if (state == 3 && (roundShot == 3 || roundShot == 6)) {
             return 40F;
         }
         return 0F;
+    }
+
+    private String hurtShape() {
+        return WildfireGender.getOrAddPlayerById(Minecraft.getMinecraft().thePlayer.getUniqueID())
+                .getBreasts().getShape().name();
     }
 
     private static void setShape(Minecraft mc, BreastShape shape) {
@@ -424,6 +473,36 @@ public class AutoTest {
 
     /** Damages the player server-side so the real hurt-sound path runs. */
     @SuppressWarnings("unchecked")
+    private static void setPeaceful() {
+        try {
+            MinecraftServer server = MinecraftServer.getServer();
+            if (server != null) {
+                // setDifficultyForAllWorlds; the name is unmapped in this MCP version
+                server.func_147139_a(net.minecraft.world.EnumDifficulty.PEACEFUL);
+            }
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.error("[autotest] could not set the difficulty", t);
+        }
+    }
+
+    /** Midnight, so the lightmap is dark enough to tell a lit pass from an unlit one. */
+    private static void setNight(Minecraft mc) {
+        try {
+            MinecraftServer server = MinecraftServer.getServer();
+            if (server != null) {
+                for (net.minecraft.world.WorldServer world : server.worldServers) {
+                    world.setWorldTime(18000L);
+                }
+            }
+            if (mc.theWorld != null) {
+                mc.theWorld.setWorldTime(18000L);
+            }
+            WildfireGender.LOGGER.info("[autotest] world set to midnight");
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.error("[autotest] could not set the time", t);
+        }
+    }
+
     private static void hurtSelf(Minecraft mc) {
         try {
             MinecraftServer server = MinecraftServer.getServer();

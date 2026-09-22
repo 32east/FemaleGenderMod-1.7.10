@@ -24,6 +24,7 @@ femalegender.wardrobe.slider.rotation=Поворот: %s
 femalegender.breast_customization.dual_physics=Раздельная физика: %s
 femalegender.breast_customization.shape=Форма: %s
 femalegender.breast_shape.classic=Классическая
+femalegender.breast_shape.merged=Слитная
 femalegender.breast_shape.round=Круглая
 
 femalegender.char_settings.physics=Физика груди: %s
