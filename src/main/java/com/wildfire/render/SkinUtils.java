@@ -53,8 +53,9 @@ public final class SkinUtils {
             Minecraft.getMinecraft().getTextureManager().bindTexture(skin);
             int height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
             int width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
-            // Only trust sizes that look like a skin; mipmapped/resized textures keep the same aspect ratio
-            if (width > 0 && height > 0 && height * 2 >= width) {
+            // Only the aspect ratio matters: an HD skin is the same layout scaled up. Anything smaller
+            // than a skin is the missing-texture placeholder or a half-loaded download, so ignore it.
+            if (width >= 64 && height >= 32) {
                 entry.height = height >= width ? 64 : 32;
             }
         } catch (Throwable ignored) {

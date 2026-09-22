@@ -97,13 +97,13 @@ public class WildfirePlayerListScreen extends BaseWildfireScreen {
             GenderPlayer plr = WildfireGender.getOrAddPlayerById(player.getUniqueID());
             String label = player.getCommandSenderName() + EnumChatFormatting.GRAY + " - "
                     + plr.getGender().getDisplayName();
-            buttonList.add(new WildfireButton(ID_FIRST_ROW + row, rowX + 21, top + row * ROW_HEIGHT, 97, 19, label));
+            buttonList.add(new WildfireButton(ID_FIRST_ROW + row, rowX + 20, top + row * ROW_HEIGHT, 92, 19, label));
         }
 
         if (pageCount() > 1) {
             int navY = top + ROWS * ROW_HEIGHT + 2;
             buttonList.add(new WildfireButton(ID_PREV, rowX, navY, 20, 16, "<"));
-            buttonList.add(new WildfireButton(ID_NEXT, rowX + 98, navY, 20, 16, ">"));
+            buttonList.add(new WildfireButton(ID_NEXT, rowX + 92, navY, 20, 16, ">"));
         }
     }
 
@@ -160,7 +160,7 @@ public class WildfirePlayerListScreen extends BaseWildfireScreen {
         }
 
         if (pageCount() > 1) {
-            drawCenteredString(fontRendererObj, (page + 1) + " / " + pageCount(), this.width / 2,
+            drawCenteredString(fontRendererObj, (page + 1) + " / " + pageCount(), this.width / 2 - 3,
                     top + ROWS * ROW_HEIGHT + 6, 0xFFFFFF);
         }
         drawButtonTooltips(mouseX, mouseY);

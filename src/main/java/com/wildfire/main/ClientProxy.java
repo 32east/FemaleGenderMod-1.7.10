@@ -27,7 +27,9 @@ public class ClientProxy extends CommonProxy {
         MinecraftForge.EVENT_BUS.register(new GenderLayer());
 
         if (com.wildfire.debug.AutoTest.ENABLED) {
-            FMLCommonHandler.instance().bus().register(new com.wildfire.debug.AutoTest());
+            com.wildfire.debug.AutoTest autoTest = new com.wildfire.debug.AutoTest();
+            FMLCommonHandler.instance().bus().register(autoTest);
+            MinecraftForge.EVENT_BUS.register(autoTest);
         }
     }
 }

@@ -11,7 +11,16 @@ import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 
+import com.wildfire.main.WildfireSounds;
+import cpw.mods.fml.common.eventhandler.EventPriority;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.DamageSource;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.event.entity.PlaySoundAtEntityEvent;
+
 import java.io.File;
+import java.util.List;
 
 /**
  * Scripted smoke test: boots a flat world and writes a fixed set of screenshots, then quits.
@@ -67,6 +76,7 @@ public class AutoTest {
             case 1:
                 if (mc.thePlayer != null && mc.theWorld != null && mc.currentScreen == null && ticks > 100) {
                     WildfireGender.LOGGER.info("[autotest] world ready");
+                    reportSoundRegistration(mc);
                     mc.gameSettings.thirdPersonView = 2; // front-facing third person
                     mc.gameSettings.hideGUI = true;
                     configure(mc, Gender.MALE, 0.8F, false);
@@ -189,6 +199,13 @@ public class AutoTest {
                 break;
 
             case 15:
+                if (ticks > 5) {
+                    hurtSelf(mc);
+                    next();
+                }
+                break;
+
+            case 16:
                 if (ticks > 20) {
                     WildfireGender.LOGGER.info("[autotest] done, shutting down");
                     mc.shutdown();
@@ -232,6 +249,50 @@ public class AutoTest {
         mc.thePlayer.inventory.armorInventory[2] =
                 new net.minecraft.item.ItemStack(net.minecraft.init.Items.iron_chestplate);
         WildfireGender.LOGGER.info("[autotest] equipped iron chestplate");
+    }
+
+    /** Confirms the sounds.json in our jar was actually parsed and registered. */
+    private static void reportSoundRegistration(Minecraft mc) {
+        try {
+            boolean one = mc.getSoundHandler()
+                    .getSound(new ResourceLocation(WildfireSounds.FEMALE_HURT1)) != null;
+            boolean two = mc.getSoundHandler()
+                    .getSound(new ResourceLocation(WildfireSounds.FEMALE_HURT2)) != null;
+            WildfireGender.LOGGER.info("[autotest] sounds registered: hurt1=" + one + " hurt2=" + two);
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.error("[autotest] sound lookup failed", t);
+        }
+    }
+
+    /** Damages the player server-side so the real hurt-sound path runs. */
+    @SuppressWarnings("unchecked")
+    private static void hurtSelf(Minecraft mc) {
+        try {
+            MinecraftServer server = MinecraftServer.getServer();
+            if (server == null) {
+                WildfireGender.LOGGER.info("[autotest] no integrated server, skipping hurt test");
+                return;
+            }
+            List<EntityPlayerMP> list = server.getConfigurationManager().playerEntityList;
+            if (list.isEmpty()) {
+                return;
+            }
+            EntityPlayerMP player = list.get(0);
+            player.capabilities.disableDamage = false;
+            WildfireGender.LOGGER.info("[autotest] hurting " + player.getCommandSenderName());
+            player.attackEntityFrom(DamageSource.generic, 2.0F);
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.error("[autotest] hurt test failed", t);
+        }
+    }
+
+    /** Runs after the mod's own handler, so it sees the final sound name. */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onPlaySound(PlaySoundAtEntityEvent event) {
+        if (event.name != null && event.name.contains("hurt")) {
+            WildfireGender.LOGGER.info("[autotest] hurt sound on "
+                    + (event.entity.worldObj.isRemote ? "client" : "server") + ": " + event.name);
+        }
     }
 
     private void shot(Minecraft mc, String name) {
