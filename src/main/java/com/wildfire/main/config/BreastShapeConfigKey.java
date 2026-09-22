@@ -6,8 +6,8 @@ import com.wildfire.main.BreastShape;
 /** Stores shape names so adding more shapes later does not renumber existing profiles. */
 public class BreastShapeConfigKey extends ConfigKey<BreastShape> {
 
-    public BreastShapeConfigKey(String key) {
-        super(key, BreastShape.CLASSIC);
+    public BreastShapeConfigKey(String key, BreastShape defaultShape) {
+        super(key, defaultShape);
     }
 
     @Override

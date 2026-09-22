@@ -90,6 +90,7 @@ public class AutoTest {
                         mc.displayGuiScreen(null);
                     }
                     WildfireGender.LOGGER.info("[autotest] world ready");
+                    reportDefaults();
                     reportSoundRegistration(mc);
                     reportTooltipSplitting();
                     reportSoundsJsonProviders(mc);
@@ -324,8 +325,15 @@ public class AutoTest {
                 }
                 break;
 
-            case 17:
+            case 17: // fall damage: falling plays a fall sound of its own as well as the hurt sound
                 if (ticks > 20) {
+                    dropFromHeight(mc, 14);
+                    next();
+                }
+                break;
+
+            case 18:
+                if (ticks > 80) {
                     WildfireGender.LOGGER.info("[autotest] done, shutting down");
                     mc.shutdown();
                     state = 99;
@@ -473,6 +481,23 @@ public class AutoTest {
 
     /** Damages the player server-side so the real hurt-sound path runs. */
     @SuppressWarnings("unchecked")
+    /**
+     * What a player with no profile yet actually gets, printed the way the appearance screen labels it.
+     *
+     * <p>Defaults only apply to a profile that does not exist yet, so reading them off a fresh player is
+     * the only check that means anything -- the test account already has a file on disk.</p>
+     */
+    private static void reportDefaults() {
+        GenderPlayer fresh = new GenderPlayer(java.util.UUID.randomUUID());
+        com.wildfire.main.Breasts b = fresh.getBreasts();
+        WildfireGender.LOGGER.info(String.format(
+                "[autotest] defaults: size=%d%% separation=%d height=%d depth=%d rotation=%d dualPhysics=%s shape=%s",
+                Math.round(fresh.getBustSize() * 100F),
+                Math.round(b.getXOffset() * 10F), Math.round(b.getYOffset() * 10F),
+                Math.round(b.getZOffset() * 10F), Math.round(b.getCleavage() * 100F),
+                b.isUniboob() ? "no" : "yes", b.getShape().name()));
+    }
+
     private static void setPeaceful() {
         try {
             MinecraftServer server = MinecraftServer.getServer();
@@ -503,6 +528,29 @@ public class AutoTest {
         }
     }
 
+    /** Drops the player from a height in survival, which is the only way fall damage happens at all. */
+    private static void dropFromHeight(Minecraft mc, int height) {
+        try {
+            MinecraftServer server = MinecraftServer.getServer();
+            if (server == null) {
+                return;
+            }
+            List<EntityPlayerMP> list = server.getConfigurationManager().playerEntityList;
+            if (list.isEmpty()) {
+                return;
+            }
+            EntityPlayerMP player = list.get(0);
+            // Creative flight cancels the fall before any of this runs
+            player.setGameType(WorldSettings.GameType.SURVIVAL);
+            player.capabilities.disableDamage = false;
+            player.setHealth(player.getMaxHealth());
+            player.setPositionAndUpdate(player.posX, player.posY + height, player.posZ);
+            WildfireGender.LOGGER.info("[autotest] dropping " + player.getCommandSenderName() + " from +" + height);
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.error("[autotest] fall test failed", t);
+        }
+    }
+
     private static void hurtSelf(Minecraft mc) {
         try {
             MinecraftServer server = MinecraftServer.getServer();
@@ -523,12 +571,33 @@ public class AutoTest {
         }
     }
 
+    /**
+     * Says whether anything swallowed a hit before vanilla could voice it.
+     *
+     * <p>Vanilla plays the hurt sound from {@code attackEntityFrom}, and only if the hit gets that far:
+     * a cancelled {@code LivingAttackEvent} returns before the sound, and so does a second hit inside
+     * the ten-tick invulnerability window. A pack whose extra hearts take the damage themselves leaves
+     * nothing for the sound swap to work on, and this line is what tells the two cases apart.</p>
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public void onLivingAttack(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+        if (!(event.entity instanceof EntityPlayer)) {
+            return;
+        }
+        WildfireGender.LOGGER.info("[autotest] attack " + event.source.damageType
+                + " amount=" + event.ammount
+                + " cancelled=" + event.isCanceled()
+                + " hurtResistant=" + ((EntityPlayer) event.entity).hurtResistantTime
+                + " on " + (event.entity.worldObj.isRemote ? "client" : "server"));
+    }
+
     /** Runs after the mod's own handler, so it sees the final sound name. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onPlaySound(PlaySoundAtEntityEvent event) {
-        if (event.name != null && event.name.contains("hurt")) {
-            WildfireGender.LOGGER.info("[autotest] hurt sound on "
-                    + (event.entity.worldObj.isRemote ? "client" : "server") + ": " + event.name);
+        if (event.name != null && (event.name.contains("hurt") || state >= 17)) {
+            WildfireGender.LOGGER.info("[autotest] sound on "
+                    + (event.entity.worldObj.isRemote ? "client" : "server") + ": " + event.name
+                    + (event.isCanceled() ? " (cancelled)" : ""));
         }
     }
 
