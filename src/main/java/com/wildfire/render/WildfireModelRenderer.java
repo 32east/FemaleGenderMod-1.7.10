@@ -199,8 +199,14 @@ public class WildfireModelRenderer {
         /** Cells per side of the front grid. */
         private static final int GRID = 10;
 
-        /** How much of the true curvature reaches the shading; see {@link #normal}. */
-        private static final float SHADING_ROUNDNESS = 1F;
+        /**
+         * How much of the true curvature reaches the shading; see {@link #normal}.
+         *
+         * <p>Picked by eye against the body beside it: at 1 the bust carries the full light-to-dark
+         * range of a sphere while the torso is one flat tone, and it reads as a ball set on the chest
+         * rather than part of it.</p>
+         */
+        private static final float SHADING_ROUNDNESS = 0.55F;
 
         /** How far round the back the hidden collar reaches, and where its closing hub sits. */
         private static final float BACK_ANGLE = 40F;
