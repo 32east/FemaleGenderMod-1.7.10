@@ -24,6 +24,25 @@ and moves the same.
 
 Not ported: cloud sync (upstream 4.0+, needs their web service) and the breast UV editor.
 
+### How armor affects physics
+
+Each chest item has a *resistance* (how much it damps the bounce) and a *tightness* (how much it
+compresses the chest). Physics is switched off entirely at resistance 1, which is why plate armor
+looks rigid. These are upstream's values; they live in
+[SimpleGenderArmor](src/main/java/com/wildfire/render/armor/SimpleGenderArmor.java).
+
+| Chestplate | Resistance | Tightness | Physics |
+|---|---|---|---|
+| Leather | 0.30 | 0.50 | yes, damped |
+| Chainmail | 0.50 | 0.20 | yes, damped |
+| Gold | 0.85 | — | barely visible |
+| Iron / Diamond | 1.00 | — | **none** |
+| Anything else, including modded | 0.50 | — | yes, damped |
+| Not an `ItemArmor` chest piece (elytra, backpacks) | — | — | treated as not covering the chest |
+
+Other mods can register their own values with `WildfireHelper.addGenderArmor(item, resistance,
+tightness)` or a full `IGenderArmor`.
+
 ## Building
 
 The GTNH Gradle plugin needs a **Java 25** JVM to run, and the RetroFuturaGradle source
