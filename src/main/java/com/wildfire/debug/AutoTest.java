@@ -75,7 +75,13 @@ public class AutoTest {
                 break;
 
             case 1:
-                if (mc.thePlayer != null && mc.theWorld != null && mc.currentScreen == null && ticks > 100) {
+                if (mc.thePlayer != null && mc.theWorld != null && ticks > 100) {
+                    if (mc.currentScreen != null) {
+                        // Packs open things on first join (GTNH pops the quest book); get it out of the way
+                        WildfireGender.LOGGER
+                                .info("[autotest] dismissing " + mc.currentScreen.getClass().getName());
+                        mc.displayGuiScreen(null);
+                    }
                     WildfireGender.LOGGER.info("[autotest] world ready");
                     reportSoundRegistration(mc);
                     reportTooltipSplitting();
