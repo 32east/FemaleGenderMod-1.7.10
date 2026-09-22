@@ -151,7 +151,9 @@ public class AutoTest {
             case 9: // physics: jump around and capture frames, once in iron and once in leather
                 if (mc.thePlayer != null) {
                     mc.thePlayer.rotationPitch = 0;
-                    if (mc.thePlayer.onGround && ticks % 18 == 0) {
+                    // jump() just sets upward motion, so it perturbs the physics even mid-air;
+                    // requiring onGround left the player perfectly still in some worlds
+                    if (ticks % 18 == 0) {
                         mc.thePlayer.jump();
                     }
                 }
