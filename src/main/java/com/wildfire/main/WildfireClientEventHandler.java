@@ -1,6 +1,6 @@
 package com.wildfire.main;
 
-import com.wildfire.gui.screen.WardrobeBrowserScreen;
+import com.wildfire.gui.screen.WildfirePlayerListScreen;
 import com.wildfire.main.networking.PacketGenderInfo;
 import com.wildfire.main.networking.WildfireNetwork;
 import com.wildfire.render.GenderLayer;
@@ -45,10 +45,7 @@ public class WildfireClientEventHandler {
             UUID uuid = player.getUniqueID();
             if (!WildfireGender.CLOTHING_PLAYERS.containsKey(uuid)) {
                 WildfireGender.getOrAddPlayerById(uuid);
-                // Only our own settings live on disk; everyone else arrives over the network
-                if (self != null && uuid.equals(self.getUniqueID())) {
-                    WildfireGender.loadGenderInfoAsync(uuid, true);
-                }
+                WildfireGender.loadGenderInfoAsync(uuid, self != null && uuid.equals(self.getUniqueID()));
             }
             GenderLayer.updatePhysics(player);
         }
@@ -56,7 +53,7 @@ public class WildfireClientEventHandler {
         if (mc.currentScreen == null) {
             while (ClientProxy.openGenderMenu.isPressed()) {
                 if (self != null) {
-                    mc.displayGuiScreen(new WardrobeBrowserScreen(null, self.getUniqueID()));
+                    mc.displayGuiScreen(new WildfirePlayerListScreen(null, self.getUniqueID()));
                 }
             }
         }

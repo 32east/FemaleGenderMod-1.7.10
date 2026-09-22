@@ -147,13 +147,22 @@ public class AutoTest {
             case 10:
                 if (ticks > 10) {
                     mc.gameSettings.hideGUI = false;
-                    mc.displayGuiScreen(new com.wildfire.gui.screen.WardrobeBrowserScreen(null,
+                    mc.displayGuiScreen(new com.wildfire.gui.screen.WildfirePlayerListScreen(null,
                             mc.thePlayer.getUniqueID()));
                     next();
                 }
                 break;
 
             case 11:
+                if (ticks > 15) {
+                    shot(mc, "07b-gui-playerlist");
+                    mc.displayGuiScreen(new com.wildfire.gui.screen.WardrobeBrowserScreen(null,
+                            mc.thePlayer.getUniqueID()));
+                    next();
+                }
+                break;
+
+            case 12:
                 if (ticks > 15) {
                     shot(mc, "08-gui-wardrobe");
                     mc.displayGuiScreen(new com.wildfire.gui.screen.WildfireBreastCustomizationScreen(null,
@@ -162,7 +171,7 @@ public class AutoTest {
                 }
                 break;
 
-            case 12:
+            case 13:
                 if (ticks > 15) {
                     shot(mc, "09-gui-customization");
                     mc.displayGuiScreen(new com.wildfire.gui.screen.WildfireCharacterSettingsScreen(null,
@@ -171,7 +180,7 @@ public class AutoTest {
                 }
                 break;
 
-            case 13:
+            case 14:
                 if (ticks > 15) {
                     shot(mc, "10-gui-settings");
                     mc.displayGuiScreen(null);
@@ -179,7 +188,7 @@ public class AutoTest {
                 }
                 break;
 
-            case 14:
+            case 15:
                 if (ticks > 20) {
                     WildfireGender.LOGGER.info("[autotest] done, shutting down");
                     mc.shutdown();

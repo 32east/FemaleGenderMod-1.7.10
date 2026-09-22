@@ -199,11 +199,15 @@ public class GenderPlayer {
      */
     public static GenderPlayer loadCachedPlayer(UUID uuid, boolean markForSync) {
         GenderPlayer plr = WildfireGender.getPlayerById(uuid);
-        if (plr == null) {
+        if (plr == null || plr.syncStatus == SyncStatus.SYNCED) {
+            return null;
+        }
+        Configuration config = plr.getConfig();
+        if (plr.syncStatus == SyncStatus.SYNCED) {
+            // A sync packet landed while we were reading the file; the server wins
             return null;
         }
         plr.syncStatus = SyncStatus.CACHED;
-        Configuration config = plr.getConfig();
         plr.updateGender(config.get(Configuration.GENDER));
         plr.updateBustSize(config.get(Configuration.BUST_SIZE));
         plr.updateHurtSounds(config.get(Configuration.HURT_SOUNDS));

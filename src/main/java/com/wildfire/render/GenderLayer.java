@@ -265,17 +265,19 @@ public class GenderLayer {
             GL11.glTranslatef(left ? 0.001f : -0.001f, 0.015f, -0.015f);
             GL11.glScalef(1.05f, 1, 1);
 
+            // Armor pass 1 is the chestplate layer; a color other than -1 means it is dyeable and
+            // gets a second, undyed overlay pass, the same way RenderPlayer does it.
             ResourceLocation armorTexture = RenderBiped.getArmorResource(entity, armorStack, 1, null);
+            int color = armorItem.getColor(armorStack);
             if (armorTexture != null) {
-                if (armorItem.getArmorMaterial() == ItemArmor.ArmorMaterial.CLOTH) {
-                    int color = armorItem.getColor(armorStack);
+                if (color != -1) {
                     GL11.glColor4f((color >> 16 & 255) / 255.0F, (color >> 8 & 255) / 255.0F, (color & 255) / 255.0F, 1F);
                 }
                 mc.getTextureManager().bindTexture(armorTexture);
                 renderBox(breastArmor);
                 GL11.glColor4f(1F, 1F, 1F, 1F);
 
-                if (armorItem.getArmorMaterial() == ItemArmor.ArmorMaterial.CLOTH) {
+                if (color != -1) {
                     ResourceLocation overlay = RenderBiped.getArmorResource(entity, armorStack, 1, "overlay");
                     if (overlay != null) {
                         mc.getTextureManager().bindTexture(overlay);

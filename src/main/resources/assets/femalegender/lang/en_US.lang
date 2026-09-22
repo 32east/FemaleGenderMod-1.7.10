@@ -37,3 +37,5 @@ femalegender.tooltip.armor_physics=Keeps physics active while wearing a chestpla
 femalegender.tooltip.hide_in_armor=Hides breasts entirely while wearing a chestplate.
 femalegender.tooltip.hurt_sounds=Replaces your hurt sound with a female one.
 femalegender.tooltip.bounce_warning=High bounce values may look unnatural.
+
+femalegender.player_list.title=Players

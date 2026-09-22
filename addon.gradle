@@ -9,3 +9,20 @@ tasks.configureEach { task ->
         }
     }
 }
+
+// `./gradlew installMod` drops the freshly reobfuscated jar into the GT New Horizons mods folder,
+// under a fixed name, so a stale build can never be picked up by mistake.
+def packMods = file(System.getenv('FGM_PACK_MODS')
+    ?: "${System.getProperty('user.home')}/AppData/Roaming/.tlauncher/legacy/Minecraft/game/mods")
+
+tasks.register('installMod', Copy) {
+    group = 'femalegender'
+    description = 'Copy the built mod into the modpack mods folder'
+    dependsOn tasks.named('reobfJar')
+    from(tasks.named('jar').flatMap { it.archiveFile })
+    into packMods
+    rename { 'femalegender.jar' }
+    doLast {
+        logger.lifecycle("installed ${packMods}/femalegender.jar")
+    }
+}
