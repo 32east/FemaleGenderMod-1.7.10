@@ -88,6 +88,9 @@ public class AutoTest {
                     reportSoundsJsonProviders(mc);
                     mc.gameSettings.thirdPersonView = 2; // front-facing third person
                     mc.gameSettings.hideGUI = true;
+                    // Without this an unfocused window opens the pause menu, which stops the
+                    // integrated server: the world freezes and every physics frame comes out identical
+                    mc.gameSettings.pauseOnLostFocus = false;
                     configure(mc, Gender.MALE, 0.8F, false);
                     next();
                 }
