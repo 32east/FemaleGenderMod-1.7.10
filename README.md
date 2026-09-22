@@ -38,6 +38,16 @@ override it with `FGM_JDK25`, and set the Zulu path in `org.gradle.java.installa
 The distributable jar lands in `build/libs/femalegender-<version>.jar`. Versioning comes from git
 tags, so the working tree needs at least one tag.
 
+To drop the build straight into a modpack:
+
+```bash
+./build.sh installMod
+```
+
+It copies the **reobfuscated** jar (not the `-dev` one, which keeps MCP names and dies at runtime
+with `NoSuchMethodError`) to `mods/femalegender.jar`, under a fixed name so a stale build cannot be
+picked up by mistake. Point it elsewhere with `FGM_PACK_MODS`.
+
 ## Testing
 
 `com.wildfire.debug.AutoTest` scripts the client: it creates a flat world, poses the player through
@@ -52,11 +62,18 @@ screenshot for every step into `screenshots/`, then quits. Nothing runs unless
 Screenshots land in `run/client/screenshots/`. The male and female frames are captured with physics
 off and a fixed camera, so they can be diffed pixel by pixel.
 
+Besides the screenshots it also logs three things worth asserting: whether the sounds from
+`sounds.json` reached the sound registry, what the hurt sound was replaced with on each side, and
+that the multi-line tooltips actually split.
+
 Useful properties:
 
 - `-Dfemalegender.autotest.menuWait=300` — ticks to wait at the main menu before creating the
   world; large modpacks replace the main menu and need longer.
 - `-Dfemalegender.autotest.world=NAME` — world folder to use.
+
+The same run works inside a full modpack: install the mod, then launch the pack with the same
+system properties. `scripts/launch_gtnh.py` does that for a TLauncher GT New Horizons install.
 
 ## License
 
