@@ -29,6 +29,7 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.RenderPlayerEvent;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -87,6 +88,9 @@ public class GenderLayer {
 
     private final ModelBox[] classicWear;
     private final ModelBox[] classicArmor;
+
+    /** Lets the in-game test draw a player without this layer, to find out which pixels are the breasts. */
+    public static boolean hiddenForTest;
 
     public GenderLayer() {
         classicWear = new ModelBox[] {
@@ -153,7 +157,7 @@ public class GenderLayer {
 
     @SubscribeEvent
     public void onRenderSpecials(RenderPlayerEvent.Specials.Post event) {
-        if (!(event.entityPlayer instanceof AbstractClientPlayer)) {
+        if (hiddenForTest || !(event.entityPlayer instanceof AbstractClientPlayer)) {
             return;
         }
         AbstractClientPlayer ent = (AbstractClientPlayer) event.entityPlayer;
@@ -266,16 +270,30 @@ public class GenderLayer {
         // box's size-driven Z nudge.
         float shapeZOff = roundShape ? 0F : zOff;
 
+        // ItemRenderer switches GL_RESCALE_NORMAL off after drawing a flat held item, and this layer comes after
+        // the held item. In the world that hardly shows, but a GUI or a HUD doll draws the player tens of times
+        // larger, and without the rescale the normals shrink to next to nothing: the breasts kept only the
+        // ambient light and went dark next to a body drawn with the rescale on
+        boolean rescaleWasOff = !GL11.glIsEnabled(GL12.GL_RESCALE_NORMAL);
+        if (rescaleWasOff) {
+            GL11.glEnable(GL12.GL_RESCALE_NORMAL);
+        }
         GL11.glColor4f(1f, 1f, 1f, 1f);
-        renderBreastWithTransforms(ent, model, armorStack, skin, wear, boxes[0], wearBoxes[0], armorBoxes[0],
-                bounceEnabled, lTotalX, lTotal, leftBounceRotation, breastSize, breastOffsetX, breastOffsetY,
-                breastOffsetZ, shapeZOff, outwardAngle, breasts.isUniboob(), isChestplateOccupied, breathingAnimation,
-                true, roundShape, partialTicks);
-        renderBreastWithTransforms(ent, model, armorStack, skin, wear, boxes[1], wearBoxes[1], armorBoxes[1],
-                bounceEnabled, rTotalX, rTotal, rightBounceRotation, breastSize, -breastOffsetX, breastOffsetY,
-                breastOffsetZ, shapeZOff, -outwardAngle, breasts.isUniboob(), isChestplateOccupied, breathingAnimation,
-                false, roundShape, partialTicks);
-        GL11.glColor4f(1f, 1f, 1f, 1f);
+        try {
+            renderBreastWithTransforms(ent, model, armorStack, skin, wear, boxes[0], wearBoxes[0], armorBoxes[0],
+                    bounceEnabled, lTotalX, lTotal, leftBounceRotation, breastSize, breastOffsetX, breastOffsetY,
+                    breastOffsetZ, shapeZOff, outwardAngle, breasts.isUniboob(), isChestplateOccupied,
+                    breathingAnimation, true, roundShape, partialTicks);
+            renderBreastWithTransforms(ent, model, armorStack, skin, wear, boxes[1], wearBoxes[1], armorBoxes[1],
+                    bounceEnabled, rTotalX, rTotal, rightBounceRotation, breastSize, -breastOffsetX, breastOffsetY,
+                    breastOffsetZ, shapeZOff, -outwardAngle, breasts.isUniboob(), isChestplateOccupied,
+                    breathingAnimation, false, roundShape, partialTicks);
+        } finally {
+            GL11.glColor4f(1f, 1f, 1f, 1f);
+            if (rescaleWasOff) {
+                GL11.glDisable(GL12.GL_RESCALE_NORMAL);
+            }
+        }
     }
 
     private void renderBreastWithTransforms(AbstractClientPlayer entity, ModelBiped model, ItemStack armorStack,

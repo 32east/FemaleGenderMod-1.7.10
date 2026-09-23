@@ -20,11 +20,25 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.entity.PlaySoundAtEntityEvent;
 
+import com.wildfire.render.GenderLayer;
+import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.client.shader.Framebuffer;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.nio.IntBuffer;
 import java.util.List;
 
 /**
- * Scripted smoke test: boots a flat world and writes a fixed set of screenshots, then quits.
+ * Scripted smoke test: boots a flat world and writes a fixed set of screenshots, then quits. One step also
+ * measures pixels: a held item must not darken the breasts of a player drawn at GUI size.
  *
  * <p>The shots are deliberately deterministic (fixed camera, physics off) so male/female pairs can be
  * diffed pixel by pixel; only the last few exercise the physics. Enabled with
@@ -53,6 +67,15 @@ public class AutoTest {
     private static final String[] HURT_SHOTS = {
             "11-female-hurt-flash", "11b-female-hurt-flash-round", "11c-female-hurt-flash-round-night" };
     private int roundShot = 0;
+
+    /** Setups the held-item shading check measures, one per pass through its step. */
+    private static final String[] SHADING_VARIANTS = {"classic", "round", "classic-iron"};
+    private int shadingShot = 0;
+
+    /** Offscreen frame for the held-item check: the player drawn as the inventory draws it, a bit larger. */
+    private static final int PROBE_WIDTH = 160;
+    private static final int PROBE_HEIGHT = 200;
+    private static final int PROBE_SCALE = 80;
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
@@ -290,7 +313,22 @@ public class AutoTest {
                 }
                 break;
 
-            case 15:
+            case 15: // a held item must not darken the breasts of a player drawn at GUI size
+                if (ticks == 1) {
+                    setUpShading(mc, shadingShot);
+                } else if (ticks > SETTLE) {
+                    checkHeldItemShading(mc, SHADING_VARIANTS[shadingShot]);
+                    if (++shadingShot < SHADING_VARIANTS.length) {
+                        ticks = 0;
+                    } else {
+                        setShape(mc, BreastShape.CLASSIC);
+                        giveChestplate(mc, net.minecraft.init.Items.leather_chestplate);
+                        next();
+                    }
+                }
+                break;
+
+            case 16:
                 // Damage inside the invulnerability window is swallowed, so the second round waits it out
                 if (ticks > (hurtShot == 0 ? 5 : 25)) {
                     mc.gameSettings.hideGUI = true;
@@ -299,7 +337,7 @@ public class AutoTest {
                 }
                 break;
 
-            case 16:
+            case 17:
                 // hurtTime counts ten ticks down from the hit and the flash comes back from the
                 // server, so a couple of ticks in is the safe place to catch it
                 if (ticks > 3) {
@@ -317,7 +355,7 @@ public class AutoTest {
                     }
                     if (hurtShot < HURT_SHOTS.length - 1) {
                         hurtShot++;
-                        state = 15;
+                        state = 16;
                         ticks = 0;
                     } else {
                         next();
@@ -325,14 +363,14 @@ public class AutoTest {
                 }
                 break;
 
-            case 17: // fall damage: falling plays a fall sound of its own as well as the hurt sound
+            case 18: // fall damage: falling plays a fall sound of its own as well as the hurt sound
                 if (ticks > 20) {
                     dropFromHeight(mc, 14);
                     next();
                 }
                 break;
 
-            case 18:
+            case 19:
                 if (ticks > 80) {
                     WildfireGender.LOGGER.info("[autotest] done, shutting down");
                     mc.shutdown();
@@ -594,10 +632,130 @@ public class AutoTest {
     /** Runs after the mod's own handler, so it sees the final sound name. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onPlaySound(PlaySoundAtEntityEvent event) {
-        if (event.name != null && (event.name.contains("hurt") || state >= 17)) {
+        if (event.name != null && (event.name.contains("hurt") || state >= 18)) {
             WildfireGender.LOGGER.info("[autotest] sound on "
                     + (event.entity.worldObj.isRemote ? "client" : "server") + ": " + event.name
                     + (event.isCanceled() ? " (cancelled)" : ""));
+        }
+    }
+
+    /** Bust, shape and armor for one pass of the held-item check; the size needs ticks to settle after. */
+    private static void setUpShading(Minecraft mc, int variant) {
+        configure(mc, Gender.FEMALE, 0.8F, false);
+        setShape(mc, variant == 1 ? BreastShape.ROUND : BreastShape.CLASSIC);
+        if (variant == 2) {
+            giveChestplate(mc, net.minecraft.init.Items.iron_chestplate);
+        } else {
+            mc.thePlayer.inventory.armorInventory[2] = null;
+        }
+    }
+
+    /**
+     * Holding an item must not darken the breasts.
+     *
+     * <p>{@code ItemRenderer} switches {@code GL_RESCALE_NORMAL} off after drawing a flat item, and this
+     * layer draws after the held item. In the world that hardly shows, but a GUI draws the player tens of
+     * times larger -- 30 in the inventory, 200 in the customization screen, more in a HUD doll -- and without
+     * the rescale the normals shrink to next to nothing, leaving the breasts only the ambient light. The
+     * player is drawn the way the inventory draws it, offscreen, with and without a stick in hand; the breast
+     * pixels are the ones that change when this layer is left out, minus the ones the stick and its arm
+     * change.</p>
+     */
+    private static void checkHeldItemShading(Minecraft mc, String variant) {
+        InventoryPlayer inventory = mc.thePlayer.inventory;
+        ItemStack held = inventory.mainInventory[inventory.currentItem];
+        try {
+            inventory.mainInventory[inventory.currentItem] = null;
+            int[] bare = renderLikeInventory(mc);
+            GenderLayer.hiddenForTest = true;
+            int[] bareNoLayer = renderLikeInventory(mc);
+            inventory.mainInventory[inventory.currentItem] = new ItemStack(Items.stick);
+            int[] holdingNoLayer = renderLikeInventory(mc);
+            GenderLayer.hiddenForTest = false;
+            int[] holding = renderLikeInventory(mc);
+
+            long lumBare = 0;
+            long lumHolding = 0;
+            int pixels = 0;
+            int changed = 0;
+            for (int i = 0; i < bare.length; i++) {
+                if (bare[i] != bareNoLayer[i] && bareNoLayer[i] == holdingNoLayer[i]) {
+                    lumBare += luminance(bare[i]);
+                    lumHolding += luminance(holding[i]);
+                    pixels++;
+                    if (bare[i] != holding[i]) {
+                        changed++;
+                    }
+                }
+            }
+            double ratio = lumBare == 0 ? 0 : (double) lumHolding / lumBare;
+            boolean pass = pixels > 100 && Math.abs(ratio - 1) < 0.01;
+            WildfireGender.LOGGER.info(String.format("[autotest] %s a held item leaves the breast shading alone (%s):"
+                    + " %d breast pixels, %d changed, brightness with a stick %.1f%% of without",
+                    pass ? "PASS" : "FAIL", variant, pixels, changed, ratio * 100));
+            saveProbe(mc, bare, "12-held-item-" + variant + "-empty-hand");
+            saveProbe(mc, holding, "12-held-item-" + variant + "-stick");
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.error("[autotest] FAIL held item check (" + variant + ") threw", t);
+        } finally {
+            GenderLayer.hiddenForTest = false;
+            inventory.mainInventory[inventory.currentItem] = held;
+        }
+    }
+
+    private static int luminance(int argb) {
+        return ((argb >> 16 & 255) * 299 + (argb >> 8 & 255) * 587 + (argb & 255) * 114) / 1000;
+    }
+
+    /** Draws the player the way the inventory screen does, into a framebuffer of its own, and reads it back. */
+    private static int[] renderLikeInventory(Minecraft mc) {
+        Framebuffer framebuffer = new Framebuffer(PROBE_WIDTH, PROBE_HEIGHT, true);
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+        try {
+            framebuffer.setFramebufferColor(0F, 0F, 0F, 0F);
+            framebuffer.framebufferClear();
+            framebuffer.bindFramebuffer(true);
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glLoadIdentity();
+            GL11.glOrtho(0, PROBE_WIDTH, PROBE_HEIGHT, 0, 1000, 3000);
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            GL11.glLoadIdentity();
+            GL11.glTranslatef(0F, 0F, -2000F);
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthMask(true);
+            GL11.glColor4f(1F, 1F, 1F, 1F);
+            GuiInventory.func_147046_a(PROBE_WIDTH / 2, PROBE_HEIGHT - 20, PROBE_SCALE, 0F, 0F, mc.thePlayer);
+            IntBuffer buffer = BufferUtils.createIntBuffer(PROBE_WIDTH * PROBE_HEIGHT);
+            GL11.glReadPixels(0, 0, PROBE_WIDTH, PROBE_HEIGHT, GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+            int[] pixels = new int[PROBE_WIDTH * PROBE_HEIGHT];
+            buffer.get(pixels);
+            return pixels;
+        } finally {
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glPopMatrix();
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            GL11.glPopMatrix();
+            framebuffer.unbindFramebuffer();
+            framebuffer.deleteFramebuffer();
+            mc.getFramebuffer().bindFramebuffer(true);
+        }
+    }
+
+    private static void saveProbe(Minecraft mc, int[] pixels, String name) {
+        try {
+            BufferedImage image = new BufferedImage(PROBE_WIDTH, PROBE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+            for (int y = 0; y < PROBE_HEIGHT; y++) {
+                // glReadPixels starts from the bottom row
+                image.setRGB(0, PROBE_HEIGHT - 1 - y, PROBE_WIDTH, 1, pixels, y * PROBE_WIDTH, PROBE_WIDTH);
+            }
+            File dir = new File(mc.mcDataDir, "screenshots");
+            dir.mkdirs();
+            ImageIO.write(image, "png", new File(dir, name + ".png"));
+        } catch (Throwable t) {
+            WildfireGender.LOGGER.warn("[autotest] could not save " + name, t);
         }
     }
 
